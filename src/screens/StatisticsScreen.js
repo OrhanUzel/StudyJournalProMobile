@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { useNotes } from '../context/NotesContext';
 import { useTheme } from '../context/ThemeContext';
 import ChartCard from '../components/ChartCard';
 import { Ionicons } from '@expo/vector-icons';
+import DatabaseService from '../services/DatabaseService';
+import { useIsFocused } from '@react-navigation/native';
 
 /**
  * StatisticsScreen component displays study time statistics
@@ -12,9 +14,54 @@ const StatisticsScreen = () => {
   const { getStudyStats } = useNotes();
   const { theme, spacing, borderRadius } = useTheme();
   const [activePeriod, setActivePeriod] = useState('week');
-  
-  // Get stats for the active period
-  const stats = getStudyStats(activePeriod);
+  const [stats, setStats] = useState([]);
+  const isFocused = useIsFocused();
+ 
+  useEffect(() => {
+    const now = new Date();
+    let startDate;
+
+    if (activePeriod === 'week') {
+      const s = new Date(now);
+      s.setDate(now.getDate() - now.getDay());
+      s.setHours(0, 0, 0, 0);
+      startDate = s;
+    } else if (activePeriod === 'month') {
+      startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+    } else {
+      const s = new Date(now);
+      s.setDate(now.getDate() - 7);
+      startDate = s;
+    }
+
+    const noteStats = (getStudyStats(activePeriod) || []).map((s) => ({
+      date: s.date,
+      duration: typeof s.duration === 'number' ? s.duration : Number(s.duration) || 0,
+      subject: s.subject,
+    }));
+
+    const hmsToMinutes = (hms) => {
+      if (!hms || typeof hms !== 'string') return 0;
+      const [h = 0, m = 0, s = 0] = hms.split(':').map(Number);
+      return Math.floor((h * 3600 + m * 60 + s) / 60);
+    };
+
+    (async () => {
+      try {
+        const records = await DatabaseService.getAllDailyRecords();
+        const dailyStats = records
+          .filter((r) => new Date(r.day) >= startDate)
+          .map((r) => ({
+            date: r.day,
+            duration: hmsToMinutes(r.totalTimeForDay),
+          }));
+        setStats([...noteStats, ...dailyStats]);
+      } catch (err) {
+        console.error('İstatistik verisi yüklenemedi:', err);
+        setStats(noteStats);
+      }
+    })();
+  }, [activePeriod, isFocused]);
   // Calculate total study time
   const totalStudyTime = stats.reduce((total, session) => total + (session.duration || 0), 0);
   const formatMinutes = (mins) => {
@@ -149,7 +196,7 @@ const StatisticsScreen = () => {
           <View style={styles.emptyContainer}>
             <Ionicons name="analytics-outline" size={64} color={theme.textSecondary} />
             <Text style={[styles.emptyText, { color: theme.text }]}>Henüz çalışma verisi yok</Text>
-            <Text style={[styles.emptySubtext, { color: theme.textSecondary }]}>İstatistikleri görmek için çalışma notu ekleyin</Text>
+            <Text style={[styles.emptySubtext, { color: theme.textSecondary }]}>İstatistikleri görmek için kronometre kaydı veya süreli not ekleyin</Text>
           </View>
         )}
       </ScrollView>
