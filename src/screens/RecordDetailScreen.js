@@ -23,6 +23,8 @@ const RecordDetailScreen = ({ route, navigation }) => {
   const [dailyNote, setDailyNote] = useState('');
   const [isEditing, setIsEditing] = useState(false);
   const [manualDuration, setManualDuration] = useState('');
+  const [manualEndTime, setManualEndTime] = useState('');
+  const [manualNote, setManualNote] = useState('');
 
   // Kayıt detaylarını yükle
   useEffect(() => {
@@ -50,20 +52,28 @@ const RecordDetailScreen = ({ route, navigation }) => {
       Alert.alert('Hata', 'Süre biçimi HH:MM:SS olmalı.');
       return;
     }
+    if (!/^\d{2}:\d{2}$/.test(manualEndTime)) {
+      Alert.alert('Hata', 'Bitiş saati biçimi HH:MM olmalı.');
+      return;
+    }
     try {
       const nextSessionIndex = (await DatabaseService.getMaxSessionIndex(record.id)) + 1;
+      // Gün + bitiş saati -> lapDate
+      const endLocal = new Date(`${record.day}T${manualEndTime}:00`);
       const lapRecord = new LapRecord(
         null,
-        new Date().toISOString(),
+        endLocal.toISOString(),
         manualDuration,
         manualDuration,
-        '',
+        manualNote || '',
         nextSessionIndex
       );
       await DatabaseService.addLapRecord(lapRecord, record.id, nextSessionIndex);
       await DatabaseService.recomputeTotalTimeForDay(record.id);
       await loadRecordDetails();
       setManualDuration('');
+      setManualEndTime('');
+      setManualNote('');
       Alert.alert('Başarılı', 'Manuel seans eklendi.');
     } catch (error) {
       Alert.alert('Hata', 'Manuel seans eklenemedi: ' + error.message);
@@ -114,9 +124,17 @@ const RecordDetailScreen = ({ route, navigation }) => {
     });
   };
 
+  const hmsToMs = (hms) => {
+    if (!hms || typeof hms !== 'string') return 0;
+    const [h, m, s] = hms.split(':').map(Number);
+    return ((h || 0) * 3600 + (m || 0) * 60 + (s || 0)) * 1000;
+  };
+
   // Tur öğesi render fonksiyonu
   const renderLapItem = ({ item, index }) => {
     const isEven = index % 2 === 0;
+    const endDate = new Date(item.lapDate);
+    const startDate = new Date(endDate.getTime() - hmsToMs(item.duration));
     
     return (
       <View style={[
@@ -135,12 +153,9 @@ const RecordDetailScreen = ({ route, navigation }) => {
         <View style={styles.lapDetails}>
           <View style={styles.lapTimeInfo}>
             <Ionicons name="time-outline" size={14} color={theme.textSecondary} />
-            <Text style={[styles.lapTotalTime, { color: theme.textSecondary }]}>
-              Toplam: {item.totalTime}
-            </Text>
-            <Text style={[styles.lapDateTime, { color: theme.textSecondary }]}>
-              {formatTime(item.lapDate)}
-            </Text>
+            <Text style={[styles.lapTotalTime, { color: theme.textSecondary }]}>Toplam: {item.totalTime}</Text>
+            <Text style={[styles.lapDateTime, { color: theme.textSecondary }]}>Başlangıç: {startDate.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}</Text>
+            <Text style={[styles.lapDateTime, { color: theme.textSecondary }]}>Bitiş: {formatTime(item.lapDate)}</Text>
           </View>
           
           {item.note ? (
@@ -242,6 +257,16 @@ const RecordDetailScreen = ({ route, navigation }) => {
             placeholderTextColor={theme.textSecondary}
             value={manualDuration}
             onChangeText={setManualDuration}
+            keyboardType="numeric"
+          />
+          <TextInput
+            style={[styles.manualInput, { color: theme.textColor, borderColor: theme.borderColor }]}
+            placeholder="Bitiş (HH:MM)"
+            placeholderTextColor={theme.textSecondary}
+            value={manualEndTime}
+            onChangeText={setManualEndTime}
+            keyboardType="numeric"
+            maxLength={5}
           />
           <TouchableOpacity
             style={[styles.manualAddButton, { backgroundColor: theme.primaryColor }]}
@@ -249,6 +274,16 @@ const RecordDetailScreen = ({ route, navigation }) => {
           >
             <Text style={styles.manualAddButtonText}>Ekle</Text>
           </TouchableOpacity>
+        </View>
+        <View style={{ marginTop: 12 }}>
+          <TextInput
+            style={[styles.manualNoteInput, { color: theme.textColor, borderColor: theme.borderColor }]}
+            placeholder="Seans notu (opsiyonel)"
+            placeholderTextColor={theme.textSecondary}
+            value={manualNote}
+            onChangeText={setManualNote}
+            multiline
+          />
         </View>
       </View>
 
@@ -458,6 +493,13 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: 'bold',
   },
+  manualNoteInput: {
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 12,
+    minHeight: 60,
+    textAlignVertical: 'top',
+  }
 });
 
 export default RecordDetailScreen;

@@ -3,26 +3,24 @@ import { View, Text, StyleSheet, TouchableOpacity, Switch, Alert, ScrollView } f
 import { useTheme } from '../context/ThemeContext';
 import { useNotes } from '../context/NotesContext';
 import { Ionicons } from '@expo/vector-icons';
+import { useLanguage } from '../context/LanguageContext';
 
-/**
- * SettingsScreen component for app settings and information
- */
 const SettingsScreen = () => {
   const { theme, isDarkMode, toggleTheme, spacing, borderRadius } = useTheme();
   const { clearAllNotes } = useNotes();
+  const { t, language, setLanguage } = useLanguage();
   
-  // Handle clearing all notes with confirmation
   const handleClearNotes = () => {
     Alert.alert(
-      'Clear All Notes',
-      'Are you sure you want to delete all notes? This action cannot be undone.',
+      t('settings.clear_all_notes'),
+      t('home.delete_alert_body'),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         { 
-          text: 'Clear All', 
+          text: t('settings.clear_all_notes'), 
           onPress: () => {
             clearAllNotes();
-            Alert.alert('Success', 'All notes have been cleared.');
+            Alert.alert(t('stopwatch.success'), t('records.title') + ' ' + t('settings.clear_all_notes'));
           },
           style: 'destructive',
         },
@@ -32,11 +30,10 @@ const SettingsScreen = () => {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
-      {/* Header */}
       <View style={[styles.header, { borderBottomColor: theme.border }]}>
-        <Text style={[styles.title, { color: theme.text }]}>Settings</Text>
+        <Text style={[styles.title, { color: theme.text }]}>{t('settings.title')}</Text>
         <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
-          Customize your experience
+          {t('settings.subtitle')}
         </Text>
       </View>
       
@@ -47,7 +44,7 @@ const SettingsScreen = () => {
         {/* Appearance Section */}
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: theme.text }]}>
-            Appearance
+            {t('settings.appearance')}
           </Text>
           
           <View
@@ -69,7 +66,7 @@ const SettingsScreen = () => {
                   style={styles.settingIcon}
                 />
                 <Text style={[styles.settingText, { color: theme.text }]}>
-                  Dark Mode
+                  {t('settings.dark_mode')}
                 </Text>
               </View>
               <Switch
@@ -81,11 +78,68 @@ const SettingsScreen = () => {
             </View>
           </View>
         </View>
+
+        {/* Language Section */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: theme.text }]}>
+            {t('settings.language')}
+          </Text>
+          <View
+            style={[
+              styles.settingCard,
+              {
+                backgroundColor: theme.card,
+                borderColor: theme.border,
+                borderRadius: borderRadius.lg,
+              }
+            ]}
+          >
+            <TouchableOpacity 
+              style={styles.settingRow}
+              onPress={() => setLanguage('tr')}
+            >
+              <View style={styles.settingInfo}>
+                <Ionicons 
+                  name="language" 
+                  size={22} 
+                  color={language === 'tr' ? theme.primary : theme.textSecondary} 
+                  style={styles.settingIcon}
+                />
+                <Text style={[styles.settingText, { color: theme.text }]}>
+                  {t('settings.lang.tr')}
+                </Text>
+              </View>
+              {language === 'tr' && (
+                <Ionicons name="checkmark" size={20} color={theme.primary} />
+              )}
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={styles.settingRow}
+              onPress={() => setLanguage('en')}
+            >
+              <View style={styles.settingInfo}>
+                <Ionicons 
+                  name="language" 
+                  size={22} 
+                  color={language === 'en' ? theme.primary : theme.textSecondary} 
+                  style={styles.settingIcon}
+                />
+                <Text style={[styles.settingText, { color: theme.text }]}>
+                  {t('settings.lang.en')}
+                </Text>
+              </View>
+              {language === 'en' && (
+                <Ionicons name="checkmark" size={20} color={theme.primary} />
+              )}
+            </TouchableOpacity>
+          </View>
+        </View>
         
         {/* Data Management Section */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: theme.text }]}>
-            Data Management
+          <Text style={[styles.sectionTitle, { color: theme.text }]}> 
+            {t('settings.data')}
           </Text>
           
           <View
@@ -109,8 +163,8 @@ const SettingsScreen = () => {
                   color={theme.error} 
                   style={styles.settingIcon}
                 />
-                <Text style={[styles.settingText, { color: theme.text }]}>
-                  Clear All Notes
+                <Text style={[styles.settingText, { color: theme.text }]}> 
+                  {t('settings.clear_all_notes')}
                 </Text>
               </View>
               <Ionicons 
@@ -124,8 +178,8 @@ const SettingsScreen = () => {
         
         {/* About Section */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: theme.text }]}>
-            About
+          <Text style={[styles.sectionTitle, { color: theme.text }]}> 
+            {t('settings.about')}
           </Text>
           
           <View
@@ -139,20 +193,20 @@ const SettingsScreen = () => {
             ]}
           >
             <View style={styles.aboutContent}>
-              <Text style={[styles.appName, { color: theme.text }]}>
-                Study Journal Pro
+              <Text style={[styles.appName, { color: theme.text }]}> 
+                {t('settings.app_name')}
               </Text>
-              <Text style={[styles.appVersion, { color: theme.textSecondary }]}>
-                Version 1.0.0
+              <Text style={[styles.appVersion, { color: theme.textSecondary }]}> 
+                {t('settings.version')}
               </Text>
-              <Text style={[styles.appDescription, { color: theme.textSecondary }]}>
-                A minimal, elegant app to track your study sessions, take notes, and view progress statistics.
+              <Text style={[styles.appDescription, { color: theme.textSecondary }]}> 
+                {t('settings.description')}
               </Text>
               
               <View style={styles.divider} />
               
-              <Text style={[styles.copyright, { color: theme.textSecondary }]}>
-                © 2023 Study Journal Pro
+              <Text style={[styles.copyright, { color: theme.textSecondary }]}> 
+                {t('settings.copyright')}
               </Text>
             </View>
           </View>

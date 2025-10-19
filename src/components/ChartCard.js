@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, useWindowDimensions } from 'react-native';
 import { LineChart } from 'react-native-chart-kit';
 import { useTheme } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
 
 /**
  * ChartCard component for displaying study statistics
@@ -12,16 +13,26 @@ import { useTheme } from '../context/ThemeContext';
  */
 const ChartCard = ({ data, title, period }) => {
   const { theme, spacing, borderRadius, shadow } = useTheme();
+  const { t } = useLanguage();
   const { width: windowWidth } = useWindowDimensions();
   const contentPadding = 16;
   const cardPadding = 16;
   const chartWidth = Math.max(220, Math.floor(windowWidth - contentPadding * 2 - cardPadding * 2));
-  
+
   // Process data for chart display
   const processChartData = () => {
     // Default empty data
+    const defaultLabels = [
+      t('chart.days.mon'),
+      t('chart.days.tue'),
+      t('chart.days.wed'),
+      t('chart.days.thu'),
+      t('chart.days.fri'),
+      t('chart.days.sat'),
+      t('chart.days.sun'),
+    ];
     const defaultData = {
-      labels: ['Paz', 'Pts', 'Sal', 'Çar', 'Per', 'Cum', 'Cts'],
+      labels: defaultLabels,
       datasets: [
         {
           data: [0, 0, 0, 0, 0, 0, 0],
@@ -38,14 +49,15 @@ const ChartCard = ({ data, title, period }) => {
     
     // Process data based on period
     if (period === 'week') {
-      // Group by day of week
-      const daysOfWeek = ['Paz', 'Pts', 'Sal', 'Çar', 'Per', 'Cum', 'Cts'];
+      // Group by day of week (Monday-first)
+      const daysOfWeek = defaultLabels;
       const dailyTotals = [0, 0, 0, 0, 0, 0, 0];
       
       data.forEach(session => {
         const date = new Date(session.date);
-        const dayIndex = date.getDay(); // 0 = Sunday, 6 = Saturday
-        dailyTotals[dayIndex] += session.duration || 0;
+        const dayIndexSundayFirst = date.getDay(); // 0=Sun..6=Sat
+        const mondayFirstIndex = (dayIndexSundayFirst + 6) % 7; // 0=Mon..6=Sun
+        dailyTotals[mondayFirstIndex] += session.duration || 0;
       });
       
       return {
@@ -60,12 +72,12 @@ const ChartCard = ({ data, title, period }) => {
       };
     } else if (period === 'month') {
       // Group by week of month
-      const weeks = ['Hafta 1', 'Hafta 2', 'Hafta 3', 'Hafta 4', 'Hafta 5'];
+      const weeks = Array.from({ length: 5 }, (_, i) => t('chart.week', { index: i + 1 }));
       const weeklyTotals = [0, 0, 0, 0, 0];
       
       data.forEach(session => {
         const date = new Date(session.date);
-        const weekOfMonth = Math.floor(date.getDate() / 7);
+        const weekOfMonth = Math.floor((date.getDate() - 1) / 7); // 0..4
         weeklyTotals[weekOfMonth] += session.duration || 0;
       });
       
@@ -84,7 +96,7 @@ const ChartCard = ({ data, title, period }) => {
     // Default fallback
     return defaultData;
   };
-  
+
   const chartData = processChartData();
   const totalStudyTime = data?.reduce((total, session) => total + (session.duration || 0), 0) || 0;
   const hours = Math.floor(totalStudyTime / 60);
@@ -107,7 +119,7 @@ const ChartCard = ({ data, title, period }) => {
     >
       <View style={styles.header}>
         <Text style={[styles.title, { color: theme.text }]}>{title}</Text>
-        <Text style={[styles.subtitle, { color: theme.textSecondary }]}>Toplam: {totalFormatted}</Text>
+        <Text style={[styles.subtitle, { color: theme.textSecondary }]}>{t('summary.total')}: {totalFormatted}</Text>
       </View>
       <LineChart
         data={chartData}

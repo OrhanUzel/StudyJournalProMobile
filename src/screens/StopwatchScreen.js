@@ -8,7 +8,8 @@ import {
   TextInput, 
   Alert,
   Animated,
-  Keyboard
+  Keyboard,
+  Platform
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
@@ -16,70 +17,104 @@ import StopwatchService from '../services/StopwatchService';
 import DatabaseService from '../services/DatabaseService';
 import { DailyRecord, LapRecord } from '../models/RecordModels';
 
+// Salise etiketini bağımsız güncelleyen küçük bileşen
+const HundredthsTicker = React.memo(({ isRunning, color }) => {
+  const [hundredths, setHundredths] = useState('00');
+
+  useEffect(() => {
+    let id;
+    const tick = () => {
+      const ms = StopwatchService.getCurrentTotalMs();
+      const hund = Math.floor((ms % 1000) / 10).toString().padStart(2, '0');
+      setHundredths(hund);
+    };
+    // İlk değer
+    tick();
+    // Çalışırken yüksek frekansta, durunca interval yok
+    if (isRunning) {
+      id = setInterval(tick, 16);
+    }
+    return () => {
+      if (id) clearInterval(id);
+    };
+  }, [isRunning]);
+
+  return (
+    <Text style={[styles.fractionText, { color }]}>
+      .{hundredths}
+    </Text>
+  );
+});
+
 const StopwatchScreen = ({ navigation }) => {
   const { theme } = useTheme();
-  const [time, setTime] = useState('00:00:00.00');
+  const [coarseTime, setCoarseTime] = useState('00:00:00');
   const [laps, setLaps] = useState([]);
   const [lapNote, setLapNote] = useState('');
   const [dailyNote, setDailyNote] = useState('');
   const [isRunning, setIsRunning] = useState(false);
   const [showSavePanel, setShowSavePanel] = useState(false);
   const [wasRunningBeforeSave, setWasRunningBeforeSave] = useState(false);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
   
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(50)).current;
 
   // Kronometre servisini dinle
   useEffect(() => {
-    // Zaman güncellemelerini dinle
-    const onTimeUpdate = (formattedTime) => {
-      setTime(formattedTime);
+    let onTimeUpdate, onLap, onReset, onStart, onStop;
+
+    const init = async () => {
+      await StopwatchService.initialize();
+
+      // Zaman güncellemelerini dinle (HH:MM:SS sadece değiştiğinde güncelle)
+      onTimeUpdate = () => {
+        const ms = StopwatchService.getCurrentTotalMs();
+        const hms = StopwatchService.formatTimeHMS(ms);
+        setCoarseTime(prev => (prev !== hms ? hms : prev));
+      };
+
+      // Tur eklendiğinde dinle
+      onLap = (lap) => {
+        setLaps(prevLaps => {
+          if (prevLaps.some(l => l.id === lap.id)) return prevLaps;
+          return [...prevLaps, lap];
+        });
+      };
+
+      // Sıfırlandığında dinle
+      onReset = () => {
+        setLaps([]);
+        setCoarseTime('00:00:00');
+        setIsRunning(false);
+      };
+
+      // Başlatıldığında/durdurulduğunda dinle
+      onStart = () => setIsRunning(true);
+      onStop = () => setIsRunning(false);
+
+      StopwatchService.on('timeUpdate', onTimeUpdate);
+      StopwatchService.on('lap', onLap);
+      StopwatchService.on('reset', onReset);
+      StopwatchService.on('start', onStart);
+      StopwatchService.on('stop', onStop);
+
+      // Mevcut durumu al (initialize sonrası)
+      const state = StopwatchService.getState();
+      setCoarseTime(StopwatchService.formatTimeHMS(StopwatchService.getCurrentTotalMs()));
+      setLaps(state.laps);
+      setIsRunning(state.isRunning);
     };
 
-    // Tur eklendiğinde dinle
-    const onLap = (lap) => {
-      setLaps(prevLaps => {
-        // Duplicate guard: aynı id'ye sahip turu tekrar ekleme
-        if (prevLaps.some(l => l.id === lap.id)) return prevLaps;
-        return [...prevLaps, lap];
-      });
-    };
+    init();
 
-    // Sıfırlandığında dinle
-    const onReset = () => {
-      setLaps([]);
-      setTime('00:00:00.00');
-    };
-
-    // Başlatıldığında dinle
-    const onStart = () => {
-      setIsRunning(true);
-    };
-
-    // Durdurulduğunda dinle
-    const onStop = () => {
-      setIsRunning(false);
-    };
-
-    StopwatchService.on('timeUpdate', onTimeUpdate);
-    StopwatchService.on('lap', onLap);
-    StopwatchService.on('reset', onReset);
-    StopwatchService.on('start', onStart);
-    StopwatchService.on('stop', onStop);
-
-    // Mevcut durumu al
-    const state = StopwatchService.getState();
-    setTime(state.formattedTime);
-    setLaps(state.laps);
-    setIsRunning(state.isRunning);
-
-    // Temizlik fonksiyonu
+    // Temizlik
     return () => {
-      StopwatchService.off('timeUpdate', onTimeUpdate);
-      StopwatchService.off('lap', onLap);
-      StopwatchService.off('reset', onReset);
-      StopwatchService.off('start', onStart);
-      StopwatchService.off('stop', onStop);
+      if (onTimeUpdate) StopwatchService.off('timeUpdate', onTimeUpdate);
+      if (onLap) StopwatchService.off('lap', onLap);
+      if (onReset) StopwatchService.off('reset', onReset);
+      if (onStart) StopwatchService.off('start', onStart);
+      if (onStop) StopwatchService.off('stop', onStop);
     };
   }, []);
 
@@ -281,13 +316,35 @@ const StopwatchScreen = ({ navigation }) => {
     );
   };
 
+  useEffect(() => {
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+
+    const onShow = (e) => {
+      const height = e?.endCoordinates?.height || 0;
+      setKeyboardHeight(height);
+    };
+    const onHide = () => setKeyboardHeight(0);
+
+    const showSub = Keyboard.addListener(showEvent, onShow);
+    const hideSub = Keyboard.addListener(hideEvent, onHide);
+
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
+
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       {/* Kronometre Ekranı */}
       <View style={styles.timerContainer}>
-        <Text style={[styles.timerText, { color: theme.textColor }]}>
-          {time}
-        </Text>
+        <View style={styles.timerRow}>
+          <Text style={[styles.timerText, { color: theme.textColor }]}>
+            {coarseTime}
+          </Text>
+          <HundredthsTicker isRunning={isRunning} color={theme.textColor} />
+        </View>
       </View>
 
       {/* Kontrol Butonları */}
@@ -386,7 +443,8 @@ const StopwatchScreen = ({ navigation }) => {
             backgroundColor: theme.cardBackground,
             opacity: fadeAnim,
             transform: [{ translateY: slideAnim }],
-            display: showSavePanel ? 'flex' : 'none'
+            display: showSavePanel ? 'flex' : 'none',
+            bottom: keyboardHeight
           }
         ]}
       >
@@ -437,10 +495,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginVertical: 30,
   },
+  timerRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+  },
   timerText: {
     fontSize: 48,
     fontWeight: 'bold',
     fontVariant: ['tabular-nums'],
+  },
+  fractionText: {
+    fontSize: 36,
+    fontWeight: 'bold',
+    fontVariant: ['tabular-nums'],
+    marginLeft: 4,
   },
   controlsContainer: {
     flexDirection: 'row',

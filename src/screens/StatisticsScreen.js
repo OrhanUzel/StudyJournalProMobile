@@ -6,6 +6,7 @@ import ChartCard from '../components/ChartCard';
 import { Ionicons } from '@expo/vector-icons';
 import DatabaseService from '../services/DatabaseService';
 import { useIsFocused } from '@react-navigation/native';
+import { useLanguage } from '../context/LanguageContext';
 
 /**
  * StatisticsScreen component displays study time statistics
@@ -13,6 +14,7 @@ import { useIsFocused } from '@react-navigation/native';
 const StatisticsScreen = () => {
   const { getStudyStats } = useNotes();
   const { theme, spacing, borderRadius } = useTheme();
+  const { t } = useLanguage();
   const [activePeriod, setActivePeriod] = useState('week');
   const [stats, setStats] = useState([]);
   const isFocused = useIsFocused();
@@ -22,8 +24,10 @@ const StatisticsScreen = () => {
     let startDate;
 
     if (activePeriod === 'week') {
+      const day = now.getDay();
+      const mondayOffset = (day + 6) % 7;
       const s = new Date(now);
-      s.setDate(now.getDate() - now.getDay());
+      s.setDate(now.getDate() - mondayOffset);
       s.setHours(0, 0, 0, 0);
       startDate = s;
     } else if (activePeriod === 'month') {
@@ -62,7 +66,7 @@ const StatisticsScreen = () => {
       }
     })();
   }, [activePeriod, isFocused]);
-  // Calculate total study time
+
   const totalStudyTime = stats.reduce((total, session) => total + (session.duration || 0), 0);
   const formatMinutes = (mins) => {
     const h = Math.floor(mins / 60);
@@ -70,63 +74,49 @@ const StatisticsScreen = () => {
     return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
   };
   
-  // Calculate average study time per day
   const calculateAverage = () => {
     if (stats.length === 0) return 0;
-    
-    // Group by day
     const days = {};
     stats.forEach(session => {
       const date = new Date(session.date).toDateString();
       days[date] = (days[date] || 0) + (session.duration || 0);
     });
-    
-    // Calculate average
     const totalDays = Object.keys(days).length;
     return totalDays > 0 ? Math.round(totalStudyTime / totalDays) : 0;
   };
-  
+
   const averageStudyTime = calculateAverage();
-  
-  // Get most studied subject
+
   const getMostStudiedSubject = () => {
     if (stats.length === 0) return 'N/A';
-    
-    // Group by subject
     const subjects = {};
     stats.forEach(session => {
       if (session.subject) {
         subjects[session.subject] = (subjects[session.subject] || 0) + (session.duration || 0);
       }
     });
-    
-    // Find subject with max time
     let maxSubject = 'N/A';
     let maxTime = 0;
-    
     Object.entries(subjects).forEach(([subject, time]) => {
       if (time > maxTime) {
         maxSubject = subject;
         maxTime = time;
       }
     });
-    
     return maxSubject;
   };
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
-      {/* Header */}
       <View style={[styles.header, { borderBottomColor: theme.border }]}>
-        <Text style={[styles.title, { color: theme.text }]}>İstatistikler</Text>
-        <Text style={[styles.subtitle, { color: theme.textSecondary }]}>Çalışma ilerlemeni takip et</Text>
+        <Text style={[styles.title, { color: theme.text }]}>{t('statistics.title')}</Text>
+        <Text style={[styles.subtitle, { color: theme.textSecondary }]}>{t('statistics.subtitle')}</Text>
       </View>
       
       <ScrollView 
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
-        {/* Period Selector */}
         <View style={styles.periodSelector}>
           <TouchableOpacity
             style={[
@@ -139,7 +129,7 @@ const StatisticsScreen = () => {
             <Text
               style={[styles.periodButtonText, { color: activePeriod === 'week' ? '#FFFFFF' : theme.text }]}
             >
-              Hafta
+              {t('period.week')}
             </Text>
           </TouchableOpacity>
           
@@ -154,49 +144,46 @@ const StatisticsScreen = () => {
             <Text
               style={[styles.periodButtonText, { color: activePeriod === 'month' ? '#FFFFFF' : theme.text }]}
             >
-              Ay
+              {t('period.month')}
             </Text>
           </TouchableOpacity>
         </View>
         
-        {/* Chart */}
         <ChartCard
           data={stats}
-          title={`Çalışma Süresi (${activePeriod === 'week' ? 'Bu Hafta' : 'Bu Ay'})`}
+          title={activePeriod === 'week' ? t('chart.title_week') : t('chart.title_month')}
           period={activePeriod}
         />
-        {/* Stats Summary */}
         <View
           style={[
             styles.summaryCard,
             { backgroundColor: theme.card, borderColor: theme.border, borderRadius: borderRadius.lg }
           ]}
         >
-          <Text style={[styles.summaryTitle, { color: theme.text }]}>Özet</Text>
+          <Text style={[styles.summaryTitle, { color: theme.text }]}>{t('summary.title')}</Text>
           <View style={[styles.statRow, { flexWrap: 'wrap' }]}>
             <View style={styles.statItem}>
               <Ionicons name="time-outline" size={24} color={theme.primary} />
               <Text style={[styles.statValue, { color: theme.text }]}>{formatMinutes(totalStudyTime)}</Text>
-              <Text style={[styles.statLabel, { color: theme.textSecondary }]}>Toplam Süre</Text>
+              <Text style={[styles.statLabel, { color: theme.textSecondary }]}>{t('summary.total')}</Text>
             </View>
             <View style={styles.statItem}>
               <Ionicons name="calendar-outline" size={24} color={theme.primary} />
               <Text style={[styles.statValue, { color: theme.text }]}>{formatMinutes(averageStudyTime)}</Text>
-              <Text style={[styles.statLabel, { color: theme.textSecondary }]}>Günlük Ortalama</Text>
+              <Text style={[styles.statLabel, { color: theme.textSecondary }]}>{t('summary.daily_avg')}</Text>
             </View>
             <View style={styles.statItem}>
               <Ionicons name="book-outline" size={24} color={theme.primary} />
               <Text style={[styles.statValue, { color: theme.text }]} numberOfLines={1}>{getMostStudiedSubject()}</Text>
-              <Text style={[styles.statLabel, { color: theme.textSecondary }]}>En Çok Çalışılan Konu</Text>
+              <Text style={[styles.statLabel, { color: theme.textSecondary }]}>{t('summary.most_subject')}</Text>
             </View>
           </View>
         </View>
-        {/* Empty State */}
         {stats.length === 0 && (
           <View style={styles.emptyContainer}>
             <Ionicons name="analytics-outline" size={64} color={theme.textSecondary} />
-            <Text style={[styles.emptyText, { color: theme.text }]}>Henüz çalışma verisi yok</Text>
-            <Text style={[styles.emptySubtext, { color: theme.textSecondary }]}>İstatistikleri görmek için kronometre kaydı veya süreli not ekleyin</Text>
+            <Text style={[styles.emptyText, { color: theme.text }]}>{t('empty.stats')}</Text>
+            <Text style={[styles.emptySubtext, { color: theme.textSecondary }]}>{t('empty.stats.subtext')}</Text>
           </View>
         )}
       </ScrollView>

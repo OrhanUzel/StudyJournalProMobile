@@ -125,20 +125,18 @@ export const NotesProvider = ({ children }) => {
     let startDate;
     
     if (period === 'week') {
-      // Get start of current week (Sunday)
+      const day = now.getDay();
+      const mondayOffset = (day + 6) % 7;
       startDate = new Date(now);
-      startDate.setDate(now.getDate() - now.getDay());
+      startDate.setDate(now.getDate() - mondayOffset);
       startDate.setHours(0, 0, 0, 0);
     } else if (period === 'month') {
-      // Get start of current month
       startDate = new Date(now.getFullYear(), now.getMonth(), 1);
     } else {
-      // Default to last 7 days
       startDate = new Date(now);
       startDate.setDate(now.getDate() - 7);
     }
     
-    // Filter sessions within the period
     const filteredSessions = studySessions.filter(
       (session) => new Date(session.date) >= startDate
     );

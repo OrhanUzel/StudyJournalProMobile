@@ -14,14 +14,14 @@ import RecordDetailScreen from '../screens/RecordDetailScreen';
 
 // Import theme context
 import { useTheme } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
 
-// Create navigators
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
 
-// Home stack navigator (for Home screen and Add Note screen)
 const HomeStack = () => {
   const { theme } = useTheme();
+  const { t } = useLanguage();
   
   return (
     <Stack.Navigator
@@ -45,7 +45,7 @@ const HomeStack = () => {
         name="AddNote" 
         component={AddNoteScreen} 
         options={{ 
-          title: 'Not Ekle',
+          title: t('nav.add_note'),
           headerTitleStyle: {
             fontWeight: '600',
           },
@@ -55,9 +55,9 @@ const HomeStack = () => {
   );
 };
 
-// Stopwatch stack navigator
 const StopwatchStack = () => {
   const { theme } = useTheme();
+  const { t } = useLanguage();
   
   return (
     <Stack.Navigator
@@ -76,7 +76,7 @@ const StopwatchStack = () => {
         name="Stopwatch" 
         component={StopwatchScreen} 
         options={{ 
-          title: 'Kronometre',
+          title: t('nav.stopwatch'),
           headerTitleStyle: {
             fontWeight: '600',
           },
@@ -86,9 +86,9 @@ const StopwatchStack = () => {
   );
 };
 
-// Records stack navigator
 const RecordsStack = () => {
   const { theme } = useTheme();
+  const { t } = useLanguage();
 
   return (
     <Stack.Navigator
@@ -107,7 +107,7 @@ const RecordsStack = () => {
         name="RecordsList" 
         component={RecordsListScreen} 
         options={{ 
-          title: 'Çalışma Günlüğüm',
+          title: t('nav.records'),
           headerTitleStyle: {
             fontWeight: '600',
           },
@@ -117,7 +117,7 @@ const RecordsStack = () => {
         name="RecordDetail" 
         component={RecordDetailScreen} 
         options={{ 
-          title: 'Kayıt Detayı',
+          title: t('nav.record_detail'),
           headerTitleStyle: {
             fontWeight: '600',
           },
@@ -127,9 +127,9 @@ const RecordsStack = () => {
   );
 };
 
-// Main app navigator with bottom tabs
 const AppNavigator = () => {
   const { theme } = useTheme();
+  const { t } = useLanguage();
   
   return (
     <Tab.Navigator
@@ -166,10 +166,10 @@ const AppNavigator = () => {
         },
       })}
     >
-      <Tab.Screen name="Stopwatch" component={StopwatchStack} options={{ title: 'Kronometre' }} />
-      <Tab.Screen name="Records" component={RecordsStack} options={{ title: 'Çalışma Günlüğüm' }} />
-      <Tab.Screen name="Statistics" component={StatisticsScreen} options={{ title: 'İstatistikler' }} />
-      <Tab.Screen name="Settings" component={SettingsScreen} options={{ title: 'Ayarlar' }} />
+      <Tab.Screen name="Stopwatch" component={StopwatchStack} options={{ title: t('nav.stopwatch') }} />
+      <Tab.Screen name="Records" component={RecordsStack} options={{ title: t('nav.records') }} />
+      <Tab.Screen name="Statistics" component={StatisticsScreen} options={{ title: t('nav.statistics') }} />
+      <Tab.Screen name="Settings" component={SettingsScreen} options={{ title: t('nav.settings') }} />
     </Tab.Navigator>
   );
 };
