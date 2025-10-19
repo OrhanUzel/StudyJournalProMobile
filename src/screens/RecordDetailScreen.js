@@ -12,12 +12,14 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
 import DatabaseService from '../services/DatabaseService';
 import { LapRecord } from '../models/RecordModels';
 
 const RecordDetailScreen = ({ route, navigation }) => {
   const { recordId } = route.params;
   const { theme } = useTheme();
+  const { t, language } = useLanguage();
   const [record, setRecord] = useState(null);
   const [loading, setLoading] = useState(true);
   const [dailyNote, setDailyNote] = useState('');
@@ -25,6 +27,8 @@ const RecordDetailScreen = ({ route, navigation }) => {
   const [manualDuration, setManualDuration] = useState('');
   const [manualEndTime, setManualEndTime] = useState('');
   const [manualNote, setManualNote] = useState('');
+  const [editingLapId, setEditingLapId] = useState(null);
+  const [editingLapNote, setEditingLapNote] = useState('');
 
   // Kayıt detaylarını yükle
   useEffect(() => {
@@ -49,16 +53,15 @@ const RecordDetailScreen = ({ route, navigation }) => {
 
   const handleAddManualSession = async () => {
     if (!/^\d{2}:\d{2}:\d{2}$/.test(manualDuration)) {
-      Alert.alert('Hata', 'Süre biçimi HH:MM:SS olmalı.');
+      Alert.alert(t('common.error'), t('record.duration_ph'));
       return;
     }
     if (!/^\d{2}:\d{2}$/.test(manualEndTime)) {
-      Alert.alert('Hata', 'Bitiş saati biçimi HH:MM olmalı.');
+      Alert.alert(t('common.error'), t('record.end_ph'));
       return;
     }
     try {
       const nextSessionIndex = (await DatabaseService.getMaxSessionIndex(record.id)) + 1;
-      // Gün + bitiş saati -> lapDate
       const endLocal = new Date(`${record.day}T${manualEndTime}:00`);
       const lapRecord = new LapRecord(
         null,
@@ -74,9 +77,9 @@ const RecordDetailScreen = ({ route, navigation }) => {
       setManualDuration('');
       setManualEndTime('');
       setManualNote('');
-      Alert.alert('Başarılı', 'Manuel seans eklendi.');
+      Alert.alert(t('stopwatch.success'), t('record.manual_add'));
     } catch (error) {
-      Alert.alert('Hata', 'Manuel seans eklenemedi: ' + error.message);
+      Alert.alert(t('common.error'), error.message);
     }
   };
 
@@ -87,7 +90,7 @@ const RecordDetailScreen = ({ route, navigation }) => {
       setRecord(dailyRecord);
       setDailyNote(dailyRecord.dailyNote || '');
     } catch (error) {
-      Alert.alert('Hata', 'Kayıt detayları yüklenirken bir hata oluştu: ' + error.message);
+      Alert.alert(t('common.error'), error.message);
     } finally {
       setLoading(false);
     }
@@ -99,16 +102,17 @@ const RecordDetailScreen = ({ route, navigation }) => {
       const updatedRecord = { ...record, dailyNote };
       await DatabaseService.updateDailyRecord(updatedRecord);
       setIsEditing(false);
-      Alert.alert('Başarılı', 'Not güncellendi.');
+      Alert.alert(t('stopwatch.success'), t('record.save'));
     } catch (error) {
-      Alert.alert('Hata', 'Not güncellenirken bir hata oluştu: ' + error.message);
+      Alert.alert(t('common.error'), error.message);
     }
   };
 
   // Tarih formatla
   const formatDate = (dateString) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('tr-TR', {
+    const locale = language === 'en' ? 'en-US' : 'tr-TR';
+    return date.toLocaleDateString(locale, {
       year: 'numeric',
       month: 'long',
       day: 'numeric'
@@ -118,7 +122,8 @@ const RecordDetailScreen = ({ route, navigation }) => {
   // Saat formatla
   const formatTime = (dateString) => {
     const date = new Date(dateString);
-    return date.toLocaleTimeString('tr-TR', {
+    const locale = language === 'en' ? 'en-US' : 'tr-TR';
+    return date.toLocaleTimeString(locale, {
       hour: '2-digit',
       minute: '2-digit'
     });
@@ -135,7 +140,7 @@ const RecordDetailScreen = ({ route, navigation }) => {
     const isEven = index % 2 === 0;
     const endDate = new Date(item.lapDate);
     const startDate = new Date(endDate.getTime() - hmsToMs(item.duration));
-    
+    const locale = language === 'en' ? 'en-US' : 'tr-TR';
     return (
       <View style={[
         styles.lapItem, 
@@ -143,26 +148,66 @@ const RecordDetailScreen = ({ route, navigation }) => {
       ]}>
         <View style={styles.lapHeader}>
           <Text style={[styles.lapNumber, { color: theme.textColor }]}>
-            Tur {index + 1}
+            {t('record.lap', { index: index + 1 })}
           </Text>
-          <Text style={[styles.lapTime, { color: theme.accentColor }]}>
-            {item.duration}
-          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <Text style={[styles.lapTime, { color: theme.accentColor }]}>
+              {item.duration}
+            </Text>
+            <TouchableOpacity onPress={() => { setEditingLapId(item.id); setEditingLapNote(item.note || ''); }}>
+              <Ionicons name="create-outline" size={18} color={theme.primaryColor} />
+            </TouchableOpacity>
+          </View>
         </View>
-        
         <View style={styles.lapDetails}>
           <View style={styles.lapTimeInfo}>
             <Ionicons name="time-outline" size={14} color={theme.textSecondary} />
-            <Text style={[styles.lapTotalTime, { color: theme.textSecondary }]}>Toplam: {item.totalTime}</Text>
-            <Text style={[styles.lapDateTime, { color: theme.textSecondary }]}>Başlangıç: {startDate.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}</Text>
-            <Text style={[styles.lapDateTime, { color: theme.textSecondary }]}>Bitiş: {formatTime(item.lapDate)}</Text>
+            <Text style={[styles.lapTotalTime, { color: theme.textSecondary }]}>{t('record.total')}: {item.totalTime}</Text>
+            <Text style={[styles.lapDateTime, { color: theme.textSecondary }]}>{t('record.start')}: {startDate.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })}</Text>
+            <Text style={[styles.lapDateTime, { color: theme.textSecondary }]}>{t('record.end')}: {formatTime(item.lapDate)}</Text>
           </View>
-          
-          {item.note ? (
-            <Text style={[styles.lapNote, { color: theme.textColor }]}>
-              {item.note}
-            </Text>
-          ) : null}
+          {editingLapId === item.id ? (
+            <View style={{ marginTop: 8 }}>
+              <TextInput
+                style={[styles.manualNoteInput, { color: theme.textColor, borderColor: theme.borderColor }]}
+                value={editingLapNote}
+                onChangeText={setEditingLapNote}
+                placeholder={t('stopwatch.lap_note_ph')}
+                placeholderTextColor={theme.textSecondary}
+                multiline
+              />
+              <View style={{ flexDirection: 'row', gap: 8, marginTop: 8 }}>
+                <TouchableOpacity
+                  style={[styles.manualAddButton, { backgroundColor: theme.primaryColor }]}
+                  onPress={async () => {
+                    try {
+                      await DatabaseService.updateLapRecordNote(editingLapId, editingLapNote.trim());
+                      await loadRecordDetails();
+                      setEditingLapId(null);
+                      setEditingLapNote('');
+                      Alert.alert(t('stopwatch.success'), t('record.save'));
+                    } catch (error) {
+                      Alert.alert(t('common.error'), error.message);
+                    }
+                  }}
+                >
+                  <Text style={styles.manualAddButtonText}>{t('record.save')}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.manualAddButton, { backgroundColor: theme.borderColor }]}
+                  onPress={() => { setEditingLapId(null); setEditingLapNote(''); }}
+                >
+                  <Text style={[styles.manualAddButtonText, { color: theme.textColor }]}>{t('common.cancel')}</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          ) : (
+            item.note ? (
+              <Text style={[styles.lapNote, { color: theme.textColor }]}>
+                {String(item.note).replace(/\\n/g, '\n')}
+              </Text>
+            ) : null
+          )}
         </View>
       </View>
     );
@@ -181,13 +226,13 @@ const RecordDetailScreen = ({ route, navigation }) => {
       <View style={[styles.errorContainer, { backgroundColor: theme.background }]}>
         <Ionicons name="alert-circle-outline" size={64} color={theme.dangerColor} />
         <Text style={[styles.errorText, { color: theme.textColor }]}>
-          Kayıt bulunamadı
+          {t('record.not_found')}
         </Text>
         <TouchableOpacity
           style={[styles.backButton, { backgroundColor: theme.primaryColor }]}
           onPress={() => navigation.goBack()}
         >
-          <Text style={styles.backButtonText}>Geri Dön</Text>
+          <Text style={styles.backButtonText}>{t('record.go_back')}</Text>
         </TouchableOpacity>
       </View>
     );
@@ -211,8 +256,8 @@ const RecordDetailScreen = ({ route, navigation }) => {
       {/* Not Bölümü */}
       <View style={[styles.noteSection, { backgroundColor: theme.cardBackground }]}>
         <View style={styles.noteSectionHeader}>
-          <Text style={[styles.sectionTitle, { color: theme.textColor }]}>
-            Günlük Not
+          <Text style={[styles.sectionTitle, { color: theme.textColor }]}> 
+            {t('record.daily_note')}
           </Text>
           <TouchableOpacity onPress={() => setIsEditing(!isEditing)}>
             <Ionicons 
@@ -222,7 +267,6 @@ const RecordDetailScreen = ({ route, navigation }) => {
             />
           </TouchableOpacity>
         </View>
-        
         {isEditing ? (
           <View style={styles.editNoteContainer}>
             <TextInput
@@ -230,30 +274,30 @@ const RecordDetailScreen = ({ route, navigation }) => {
               value={dailyNote}
               onChangeText={setDailyNote}
               multiline
-              placeholder="Not ekleyin..."
+              placeholder={t('stopwatch.daily_note_ph')}
               placeholderTextColor={theme.textSecondary}
             />
             <TouchableOpacity 
               style={[styles.saveButton, { backgroundColor: theme.primaryColor }]}
               onPress={handleUpdateNote}
             >
-              <Text style={styles.saveButtonText}>Kaydet</Text>
+              <Text style={styles.saveButtonText}>{t('record.save')}</Text>
             </TouchableOpacity>
           </View>
         ) : (
-          <Text style={[styles.noteText, { color: theme.textColor }]}>
-            {record.dailyNote || "Not eklenmemiş"}
+          <Text style={[styles.noteText, { color: theme.textColor }]}> 
+            {record.dailyNote || t('record.no_note')}
           </Text>
         )}
       </View>
 
       {/* Manuel Seans Ekle */}
       <View style={[styles.manualSection, { backgroundColor: theme.cardBackground }]}>
-        <Text style={[styles.sectionTitle, { color: theme.textColor }]}>Manuel Seans Ekle</Text>
+        <Text style={[styles.sectionTitle, { color: theme.textColor }]}>{t('record.manual_add')}</Text>
         <View style={styles.manualRow}>
           <TextInput
             style={[styles.manualInput, { color: theme.textColor, borderColor: theme.borderColor }]}
-            placeholder="HH:MM:SS"
+            placeholder={t('record.duration_ph')}
             placeholderTextColor={theme.textSecondary}
             value={manualDuration}
             onChangeText={setManualDuration}
@@ -261,7 +305,7 @@ const RecordDetailScreen = ({ route, navigation }) => {
           />
           <TextInput
             style={[styles.manualInput, { color: theme.textColor, borderColor: theme.borderColor }]}
-            placeholder="Bitiş (HH:MM)"
+            placeholder={t('record.end_ph')}
             placeholderTextColor={theme.textSecondary}
             value={manualEndTime}
             onChangeText={setManualEndTime}
@@ -272,13 +316,13 @@ const RecordDetailScreen = ({ route, navigation }) => {
             style={[styles.manualAddButton, { backgroundColor: theme.primaryColor }]}
             onPress={handleAddManualSession}
           >
-            <Text style={styles.manualAddButtonText}>Ekle</Text>
+            <Text style={styles.manualAddButtonText}>{t('record.add')}</Text>
           </TouchableOpacity>
         </View>
         <View style={{ marginTop: 12 }}>
           <TextInput
             style={[styles.manualNoteInput, { color: theme.textColor, borderColor: theme.borderColor }]}
-            placeholder="Seans notu (opsiyonel)"
+            placeholder={t('record.optional_note')}
             placeholderTextColor={theme.textSecondary}
             value={manualNote}
             onChangeText={setManualNote}
@@ -289,16 +333,15 @@ const RecordDetailScreen = ({ route, navigation }) => {
 
       {/* Turlar Bölümü */}
       <View style={styles.lapsSection}>
-        <Text style={[styles.sectionTitle, { color: theme.textColor }]}>
-          Turlar ({record.laps.length})
+        <Text style={[styles.sectionTitle, { color: theme.textColor }]}> 
+          {t('record.laps', { count: record.laps.length })}
         </Text>
-        
         {record.laps.length > 0 ? (
           groupSessions(record.laps).map((group) => (
             <View key={`session-${group.sessionIndex}`} style={styles.sessionSection}>
               <View style={styles.sessionHeader}>
-                <Text style={[styles.sectionTitle, { color: theme.textColor }]}>Seans {group.sessionIndex}</Text>
-                <Text style={[styles.sessionCount, { color: theme.textSecondary }]}>{group.items.length} tur</Text>
+                <Text style={[styles.sectionTitle, { color: theme.textColor }]}>{t('record.session', { index: group.sessionIndex })}</Text>
+                <Text style={[styles.sessionCount, { color: theme.textSecondary }]}>{t('record.laps', { count: group.items.length })}</Text>
               </View>
               <FlatList
                 data={group.items}
@@ -310,7 +353,7 @@ const RecordDetailScreen = ({ route, navigation }) => {
           ))
         ) : (
           <View style={styles.emptyLapsContainer}>
-            <Text style={[styles.emptyLapsText, { color: theme.textSecondary }]}>Bu kayıtta tur bulunmuyor</Text>
+            <Text style={[styles.emptyLapsText, { color: theme.textSecondary }]}>{t('record.no_laps')}</Text>
           </View>
         )}
       </View>

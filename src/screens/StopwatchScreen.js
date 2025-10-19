@@ -13,12 +13,14 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
 import StopwatchService from '../services/StopwatchService';
 import DatabaseService from '../services/DatabaseService';
 import { DailyRecord, LapRecord } from '../models/RecordModels';
+import ConfirmDialog from '../components/ConfirmDialog';
 
 // Salise etiketini bağımsız güncelleyen küçük bileşen
-const HundredthsTicker = React.memo(({ isRunning, color }) => {
+const HundredthsTicker = React.memo(({ isRunning, color, coarseTime }) => {
   const [hundredths, setHundredths] = useState('00');
 
   useEffect(() => {
@@ -28,26 +30,31 @@ const HundredthsTicker = React.memo(({ isRunning, color }) => {
       const hund = Math.floor((ms % 1000) / 10).toString().padStart(2, '0');
       setHundredths(hund);
     };
-    // İlk değer
+    // Initial update or after reset/start/stop
     tick();
-    // Çalışırken yüksek frekansta, durunca interval yok
     if (isRunning) {
       id = setInterval(tick, 16);
     }
     return () => {
       if (id) clearInterval(id);
     };
-  }, [isRunning]);
+  }, [isRunning, coarseTime]);
+
+  // Ensure hundredths resets to '00' whenever coarseTime shows zero
+  useEffect(() => {
+    if (coarseTime === '00:00:00') {
+      setHundredths('00');
+    }
+  }, [coarseTime]);
 
   return (
-    <Text style={[styles.fractionText, { color }]}>
-      .{hundredths}
-    </Text>
+    <Text style={[styles.fractionText, { color }]}>.{hundredths}</Text>
   );
 });
 
 const StopwatchScreen = ({ navigation }) => {
   const { theme } = useTheme();
+  const { t } = useLanguage();
   const [coarseTime, setCoarseTime] = useState('00:00:00');
   const [laps, setLaps] = useState([]);
   const [lapNote, setLapNote] = useState('');
@@ -56,6 +63,7 @@ const StopwatchScreen = ({ navigation }) => {
   const [showSavePanel, setShowSavePanel] = useState(false);
   const [wasRunningBeforeSave, setWasRunningBeforeSave] = useState(false);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
   
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(50)).current;
@@ -162,14 +170,7 @@ const StopwatchScreen = ({ navigation }) => {
   // Kronometreyi sıfırla
   const handleReset = () => {
     if (laps.length > 0) {
-      Alert.alert(
-        'Kronometreyi Sıfırla',
-        'Tüm turlar silinecek. Devam etmek istiyor musunuz?',
-        [
-          { text: 'İptal', style: 'cancel' },
-          { text: 'Sıfırla', onPress: () => StopwatchService.reset(), style: 'destructive' }
-        ]
-      );
+      setShowResetConfirm(true);
     } else {
       StopwatchService.reset();
     }
@@ -230,7 +231,7 @@ const StopwatchScreen = ({ navigation }) => {
   const handleSave = async () => {
     const plannedLaps = buildSaveLaps();
     if (plannedLaps.length === 0) {
-      Alert.alert('Hata', 'Kaydedilecek tur bulunamadı.');
+      Alert.alert(t('common.error'), t('stopwatch.no_laps_to_save'));
       return;
     }
 
@@ -262,9 +263,9 @@ const StopwatchScreen = ({ navigation }) => {
       await DatabaseService.updateDailyRecord(dailyRecord);
 
       Alert.alert(
-        'Başarılı',
-        'Çalışma kaydedildi.',
-        [{ text: 'Tamam', onPress: () => {
+        t('stopwatch.success'),
+        t('stopwatch.saved'),
+        [{ text: t('common.ok'), onPress: () => {
           setShowSavePanel(false);
           setDailyNote('');
           setLapNote('');
@@ -272,7 +273,7 @@ const StopwatchScreen = ({ navigation }) => {
         }}]
       );
     } catch (error) {
-      Alert.alert('Hata', 'Kayıt sırasında bir hata oluştu: ' + error.message);
+      Alert.alert(t('common.error'), error.message);
     }
   };
 
@@ -295,7 +296,7 @@ const StopwatchScreen = ({ navigation }) => {
       ]}>
         <View style={styles.lapHeader}>
           <Text style={[styles.lapNumber, { color: theme.textColor }]}>
-            Tur {displayIndex}
+            {t('record.lap', { index: displayIndex })}
           </Text>
           <Text style={[styles.lapTime, { color: theme.accentColor }]}>
             {StopwatchService.formatTime(item.lapTime)}
@@ -304,11 +305,11 @@ const StopwatchScreen = ({ navigation }) => {
         
         <View style={styles.lapDetails}>
           <Text style={[styles.lapTotalTime, { color: theme.textSecondary }]}>
-            Toplam: {StopwatchService.formatTime(item.totalTime)}
+            {t('record.total')}: {StopwatchService.formatTime(item.totalTime)}
           </Text>
           {item.note ? (
             <Text style={[styles.lapNote, { color: theme.textColor }]}>
-              Not: {item.note}
+              {String(item.note).replace(/\\n/g, '\n')}
             </Text>
           ) : null}
         </View>
@@ -343,69 +344,82 @@ const StopwatchScreen = ({ navigation }) => {
           <Text style={[styles.timerText, { color: theme.textColor }]}>
             {coarseTime}
           </Text>
-          <HundredthsTicker isRunning={isRunning} color={theme.textColor} />
+          <HundredthsTicker isRunning={isRunning} color={theme.textColor} coarseTime={coarseTime} />
         </View>
       </View>
 
       {/* Kontrol Butonları */}
-      <View style={styles.controlsContainer}>
-        {/* Reset Butonu */}
-        <TouchableOpacity 
-          style={[styles.controlButton, { backgroundColor: theme.dangerColor }]} 
-          onPress={handleReset}
-        >
-          <Ionicons name="refresh" size={24} color="#fff" />
-        </TouchableOpacity>
+      {(!isRunning && coarseTime === '00:00:00' && laps.length === 0) ? (
+        <View style={{ alignItems: 'center', marginBottom: 20 }}>
+          <TouchableOpacity 
+            style={[styles.startWideButton, { backgroundColor: theme.primaryColor }]} 
+            onPress={handleStart}
+          >
+            <Ionicons name="play" size={24} color="#fff" />
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <View style={styles.controlsContainer}>
+          {/* Reset Butonu */}
+          <TouchableOpacity 
+            style={[styles.controlButton, { backgroundColor: theme.dangerColor }]} 
+            onPress={handleReset}
+          >
+            <Ionicons name="refresh" size={24} color="#fff" />
+          </TouchableOpacity>
 
-        {/* Başlat/Durdur Butonu */}
-        <TouchableOpacity 
-          style={[
-            styles.controlButton, 
-            { backgroundColor: isRunning ? theme.warningColor : theme.successColor }
-          ]} 
-          onPress={isRunning ? handleStop : handleStart}
-        >
-          <Ionicons 
-            name={isRunning ? "pause" : "play"} 
-            size={24} 
-            color="#fff" 
-          />
-        </TouchableOpacity>
+          {/* Başlat/Durdur Butonu */}
+          <TouchableOpacity 
+            style={[
+              styles.controlButton,
+              !isRunning ? styles.startButtonStopped : null,
+              { backgroundColor: isRunning ? theme.warningColor : theme.primaryColor }
+            ]}
+            onPress={isRunning ? handleStop : handleStart}
+          >
+            <Ionicons 
+              name={isRunning ? "pause" : "play"} 
+              size={24} 
+              color="#fff" 
+            />
+          </TouchableOpacity>
 
-        {/* Tur Butonu */}
-        <TouchableOpacity 
-          style={[
-            styles.controlButton, 
-            { backgroundColor: theme.accentColor, opacity: isRunning ? 1 : 0.5 }
-          ]} 
-          onPress={handleLap}
-          disabled={!isRunning}
-        >
-          <Ionicons name="flag" size={24} color="#fff" />
-        </TouchableOpacity>
+          {/* Tur Butonu */}
+          {isRunning && (
+            <TouchableOpacity 
+              style={[
+                styles.controlButton, 
+                { backgroundColor: theme.accentColor }
+              ]} 
+              onPress={handleLap}
+            >
+              <Ionicons name="flag" size={24} color="#fff" />
+            </TouchableOpacity>
+          )}
 
-        {/* Kaydet Butonu */}
-        <TouchableOpacity 
-          style={[
-            styles.controlButton, 
-            { backgroundColor: theme.primaryColor, opacity: (laps.length > 0 || StopwatchService.getCurrentTotalMs() > 0) ? 1 : 0.5 }
-          ]} 
-          onPress={() => {
-            setWasRunningBeforeSave(isRunning);
-            if (isRunning) handleStop();
-            setShowSavePanel(true);
-          }}
-          disabled={(laps.length === 0 && StopwatchService.getCurrentTotalMs() === 0)}
-        >
-          <Ionicons name="save" size={24} color="#fff" />
-        </TouchableOpacity>
-      </View>
+          {/* Kaydet Butonu */}
+          <TouchableOpacity 
+            style={[
+              styles.controlButton, 
+              { backgroundColor: theme.successColor, opacity: (laps.length > 0 || StopwatchService.getCurrentTotalMs() > 0) ? 1 : 0.5 }
+            ]} 
+            onPress={() => {
+              setWasRunningBeforeSave(isRunning);
+              if (isRunning) handleStop();
+              setShowSavePanel(true);
+            }}
+            disabled={(laps.length === 0 && StopwatchService.getCurrentTotalMs() === 0)}
+          >
+            <Ionicons name="save" size={24} color="#fff" />
+          </TouchableOpacity>
+        </View>
+      )}
 
       {/* Tur Notu Girişi */}
       <View style={[styles.noteInputContainer, { backgroundColor: theme.cardBackground }]}>
         <TextInput
           style={[styles.noteInput, { color: theme.textColor, borderColor: theme.borderColor }]}
-          placeholder="Tur notu ekleyin..."
+          placeholder={t('stopwatch.lap_note_ph')}
           placeholderTextColor={theme.textSecondary}
           value={lapNote}
           onChangeText={setLapNote}
@@ -415,7 +429,7 @@ const StopwatchScreen = ({ navigation }) => {
       {/* Turlar Listesi */}
       <View style={styles.lapsContainer}>
         <Text style={[styles.lapsTitle, { color: theme.textColor }]}>
-          Turlar ({laps.length})
+          {t('stopwatch.laps_title', { count: laps.length })}
         </Text>
         
         {laps.length > 0 ? (
@@ -429,7 +443,7 @@ const StopwatchScreen = ({ navigation }) => {
           <View style={styles.emptyLapsContainer}>
             <Ionicons name="time-outline" size={64} color={theme.textSecondary} />
             <Text style={[styles.emptyLapsText, { color: theme.textSecondary }]}>
-              Henüz tur kaydı yok
+              {t('stopwatch.empty_laps')}
             </Text>
           </View>
         )}
@@ -450,7 +464,7 @@ const StopwatchScreen = ({ navigation }) => {
       >
         <View style={styles.savePanelHeader}>
           <Text style={[styles.savePanelTitle, { color: theme.textColor }]}>
-            Çalışmayı Kaydet
+            {t('stopwatch.save_panel_title')}
           </Text>
           <TouchableOpacity onPress={() => setShowSavePanel(false)}>
             <Ionicons name="close" size={24} color={theme.textColor} />
@@ -459,29 +473,41 @@ const StopwatchScreen = ({ navigation }) => {
 
         <TextInput
           style={[styles.dailyNoteInput, { color: theme.textColor, borderColor: theme.borderColor }]}
-          placeholder="Günlük not ekleyin (isteğe bağlı)..."
+          placeholder={t('stopwatch.daily_note_ph')}
           placeholderTextColor={theme.textSecondary}
           value={dailyNote}
           onChangeText={setDailyNote}
           multiline
         />
 
-        <Text style={[styles.saveConfirmText, { color: theme.textColor }]}>Çalışma kaydedilsin mi?</Text>
+        <Text style={[styles.saveConfirmText, { color: theme.textColor }]}>{t('stopwatch.confirm_save')}</Text>
         <View style={styles.saveActions}>
           <TouchableOpacity 
-            style={[styles.saveButton, { backgroundColor: theme.primaryColor, flex: 1, marginRight: 8 }]}
+            style={[styles.saveButton, { backgroundColor: theme.successColor, flex: 1, marginRight: 8 }]}
             onPress={handleSave}
           >
-            <Text style={styles.saveButtonText}>Evet</Text>
+            <Text style={styles.saveButtonText}>{t('common.yes')}</Text>
           </TouchableOpacity>
           <TouchableOpacity 
             style={[styles.saveButton, { backgroundColor: theme.warningColor, flex: 1, marginLeft: 8 }]}
             onPress={handleCancelSave}
           >
-            <Text style={styles.saveButtonText}>Hayır</Text>
+            <Text style={styles.saveButtonText}>{t('common.no')}</Text>
           </TouchableOpacity>
         </View>
       </Animated.View>
+
+      <ConfirmDialog
+        visible={showResetConfirm}
+        title={t('stopwatch.reset_title')}
+        message={t('stopwatch.reset_body')}
+        onCancel={() => setShowResetConfirm(false)}
+        onConfirm={() => {
+          setShowResetConfirm(false);
+          StopwatchService.reset();
+          setLapNote('');
+        }}
+      />
     </View>
   );
 };
@@ -515,6 +541,18 @@ const styles = StyleSheet.create({
     justifyContent: 'space-around',
     marginBottom: 20,
   },
+  startWideButton: {
+    width: '80%',
+    height: 60,
+    borderRadius: 30,
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+  },
   controlButton: {
     width: 60,
     height: 60,
@@ -526,6 +564,9 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 3,
+  },
+  startButtonStopped: {
+    width: 120,
   },
   noteInputContainer: {
     flexDirection: 'row',

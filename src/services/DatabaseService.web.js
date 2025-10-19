@@ -133,7 +133,15 @@ class WebDatabaseService {
     const row = this.state.dailyRecords.find(r => r.Id === dailyRecord.id);
     if (!row) throw new Error('Kayıt güncellenemedi');
     row.TotalTimeForDay = dailyRecord.totalTimeForDay;
-    row.DailyNote = dailyRecord.dailyNote;
+    row.DailyNote = dailyRecord.dailyNote || '';
+    this._save();
+  }
+
+  async updateLapRecordNote(lapId, note) {
+    await this.ready;
+    const row = this.state.lapRecords.find(r => r.Id === lapId);
+    if (!row) throw new Error('Tur notu güncellenemedi');
+    row.Note = note || '';
     this._save();
   }
 

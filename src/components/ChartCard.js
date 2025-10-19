@@ -141,7 +141,7 @@ const ChartCard = ({ data, title, period }) => {
             stroke: theme.primary,
           },
         }}
-        bezier
+        withVerticalLines={false}
         style={{
           marginVertical: 8,
           borderRadius: 16,

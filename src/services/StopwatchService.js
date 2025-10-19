@@ -43,17 +43,24 @@ const PERSIST_KEY = 'stopwatch_state_v1';
  * Asenkron çalışan kronometre servisi
  * UI thread'ini bloke etmeden arka planda çalışır
  */
+/**
+ * StopwatchService
+ * - Kronometre durumunu yönetir (çalışıyor/durdu, süre, turlar).
+ * - UI'dan bağımsız çalışır; olaylar (start, stop, reset, lap, timeUpdate) yayınlar.
+ * - Durumu AsyncStorage'a persist eder; uygulama yeniden açıldığında rehydrate eder.
+ * - Inaktivite bildirimi planlar: 180 dakika boyunca tur yapılmazsa bildirim.
+ */
 class StopwatchService {
   constructor() {
-    this.isRunning = false;
-    this.startTime = 0;
-    this.elapsedTime = 0;
-    this.lapStartTime = 0;
-    this.laps = [];
-    this.intervalId = null;
-    this.eventEmitter = new SimpleEventEmitter();
-    this._lapSeq = 0; // benzersiz lap id sayacı
-    this.inactivityNotificationId = null;
+    this.isRunning = false; // Kronometre çalışıyor mu?
+    this.startTime = 0; // Çalışmanın başlangıç zamanı (epoch ms)
+    this.elapsedTime = 0; // Durdurulduğunda gösterilecek son süre (ms)
+    this.lapStartTime = 0; // En son turun başlangıç zamanı (epoch ms)
+    this.laps = []; // Tur listesi
+    this.intervalId = null; // 10ms güncelleme zamanlayıcısı id'si
+    this.eventEmitter = new SimpleEventEmitter(); // UI'a olay yayını için basit emitter
+    this._lapSeq = 0; // Benzersiz tur kimliği üretmek için sayaç
+    this.inactivityNotificationId = null; // Planlanan inaktivite bildiriminin id'si
   }
 
   async initialize() {
@@ -119,12 +126,22 @@ class StopwatchService {
     if (!granted) return;
     try {
       const triggerSeconds = minutes * 60;
+
+      // Ensure Android channel exists (idempotent)
+      if (Platform.OS === 'android' && Notifications.setNotificationChannelAsync) {
+        try {
+          await Notifications.setNotificationChannelAsync('inactivity', {
+            name: 'Inactivity',
+            importance: Notifications.AndroidImportance.HIGH,
+          });
+        } catch {}
+      }
+
       const id = await Notifications.scheduleNotificationAsync({
         content: {
           title: 'Çalışma süreniz devam ediyor',
           body: 'Hâlâ çalışıyor musunuz? Belirlenen süre boyunca tur yapılmadı.',
           sound: true,
-          priority: Notifications.AndroidNotificationPriority.HIGH,
         },
         trigger: { seconds: triggerSeconds, channelId: 'inactivity' },
       });
@@ -159,7 +176,7 @@ class StopwatchService {
       this.eventEmitter.emit('start');
       await this.persistState();
       await this.cancelInactivityReminder();
-      //await this.scheduleInactivityReminder(1);
+      await this.scheduleInactivityReminder(5);
     }
   }
 

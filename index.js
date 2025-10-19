@@ -16,6 +16,19 @@ if (Platform.OS === 'android') {
     }
     originalConsoleError(...args);
   };
+
+  const originalConsoleWarn = console.warn;
+  console.warn = (...args) => {
+    const first = args?.[0] ?? '';
+    const msg = typeof first === 'string' ? first : String(first);
+    const isExpoGo = Constants?.appOwnership === 'expo';
+    const isExpoPushWarning = msg.includes('expo-notifications') && msg.includes('Expo Go') && msg.toLowerCase().includes('push');
+    if (isExpoGo && isExpoPushWarning) {
+      // Ignore only the specific Expo Go remote push warning
+      return;
+    }
+    originalConsoleWarn(...args);
+  };
 }
 
 import App from './App';

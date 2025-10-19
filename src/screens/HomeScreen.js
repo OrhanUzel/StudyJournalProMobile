@@ -4,6 +4,7 @@ import { useNotes } from '../context/NotesContext';
 import { useTheme } from '../context/ThemeContext';
 import NoteCard from '../components/NoteCard';
 import AddButton from '../components/AddButton';
+import ConfirmDialog from '../components/ConfirmDialog';
 
 /**
  * HomeScreen component displays the list of notes and provides navigation to add new notes
@@ -12,6 +13,8 @@ const HomeScreen = ({ navigation }) => {
   const { notes, deleteNote } = useNotes();
   const { theme, spacing } = useTheme();
   const [fadeAnim] = useState(new Animated.Value(1));
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteTargetId, setDeleteTargetId] = useState(null);
   
   // Array of motivational quotes
   const motivationalQuotes = [
@@ -32,29 +35,8 @@ const HomeScreen = ({ navigation }) => {
 
   // Handle note deletion with confirmation
   const handleDeleteNote = (noteId) => {
-    Alert.alert(
-      'Delete Note',
-      'Are you sure you want to delete this note?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Delete', 
-          onPress: () => {
-            // Fade out animation before delete
-            Animated.timing(fadeAnim, {
-              toValue: 0,
-              duration: 200,
-              useNativeDriver: true,
-            }).start(() => {
-              deleteNote(noteId);
-              // Reset fade for next render
-              fadeAnim.setValue(1);
-            });
-          },
-          style: 'destructive',
-        },
-      ]
-    );
+    setDeleteTargetId(noteId);
+    setShowDeleteConfirm(true);
   };
 
   // Navigate to add note screen
@@ -104,6 +86,30 @@ const HomeScreen = ({ navigation }) => {
         ]}
         ListEmptyComponent={renderEmptyState}
         showsVerticalScrollIndicator={false}
+      />
+
+      {/* Themed Delete Confirm */}
+      <ConfirmDialog
+        visible={showDeleteConfirm}
+        title={'Delete Note'}
+        message={'Are you sure you want to delete this note?'}
+        cancelText={'Cancel'}
+        confirmText={'Delete'}
+        onCancel={() => setShowDeleteConfirm(false)}
+        onConfirm={() => {
+          setShowDeleteConfirm(false);
+          Animated.timing(fadeAnim, {
+            toValue: 0,
+            duration: 200,
+            useNativeDriver: true,
+          }).start(() => {
+            if (deleteTargetId != null) {
+              deleteNote(deleteTargetId);
+            }
+            fadeAnim.setValue(1);
+            setDeleteTargetId(null);
+          });
+        }}
       />
 
       {/* Add Button */}

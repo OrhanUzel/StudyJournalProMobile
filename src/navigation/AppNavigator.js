@@ -73,7 +73,7 @@ const StopwatchStack = () => {
       }}
     >
       <Stack.Screen 
-        name="Stopwatch" 
+        name="StopwatchMain" 
         component={StopwatchScreen} 
         options={{ 
           title: t('nav.stopwatch'),

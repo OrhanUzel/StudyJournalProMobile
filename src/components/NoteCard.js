@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
 import { Ionicons } from '@expo/vector-icons';
 import AnimatedCard from './AnimatedCard';
 
@@ -14,11 +15,13 @@ import AnimatedCard from './AnimatedCard';
  */
 const NoteCard = ({ note, onPress, onDelete, index }) => {
   const { theme, spacing, borderRadius, shadow } = useTheme();
+  const { language } = useLanguage();
   
   // Format the date to a readable string
   const formatDate = (dateString) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
+    const locale = language === 'en' ? 'en-US' : 'tr-TR';
+    return date.toLocaleDateString(locale, {
       month: 'short',
       day: 'numeric',
       hour: '2-digit',

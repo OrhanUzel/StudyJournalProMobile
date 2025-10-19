@@ -209,6 +209,17 @@ class DatabaseService {
     }
   }
 
+  async updateLapRecordNote(lapId, note) {
+    await this.ready;
+    const result = await this.db.runAsync(
+      'UPDATE LapRecords SET Note = ? WHERE Id = ?;',
+      [note, lapId]
+    );
+    if (!result || result.changes <= 0) {
+      throw new Error('Tur notu güncellenemedi');
+    }
+  }
+
   /**
    * Günlük kaydı siler
    * @param {number} dailyRecordId

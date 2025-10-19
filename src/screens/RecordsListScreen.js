@@ -10,14 +10,19 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
 import DatabaseService from '../services/DatabaseService';
+import ConfirmDialog from '../components/ConfirmDialog';
 import { useIsFocused } from '@react-navigation/native';
 
 const RecordsListScreen = ({ navigation }) => {
   const { theme } = useTheme();
+  const { t, language } = useLanguage();
   const [records, setRecords] = useState([]);
   const [loading, setLoading] = useState(true);
   const isFocused = useIsFocused();
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [recordToDelete, setRecordToDelete] = useState(null);
 
   // Kayıtları yükle
   const loadRecords = async () => {
@@ -26,7 +31,7 @@ const RecordsListScreen = ({ navigation }) => {
       const dailyRecords = await DatabaseService.getAllDailyRecords();
       setRecords(dailyRecords);
     } catch (error) {
-      Alert.alert('Hata', 'Kayıtlar yüklenirken bir hata oluştu: ' + error.message);
+      Alert.alert(t('common.error'), error.message);
     } finally {
       setLoading(false);
     }
@@ -41,31 +46,15 @@ const RecordsListScreen = ({ navigation }) => {
 
   // Kaydı sil
   const handleDeleteRecord = (record) => {
-    Alert.alert(
-      'Kaydı Sil',
-      `${formatDate(record.day)} tarihli kaydı silmek istediğinize emin misiniz?`,
-      [
-        { text: 'İptal', style: 'cancel' },
-        { 
-          text: 'Sil', 
-          onPress: async () => {
-            try {
-              await DatabaseService.deleteDailyRecord(record.id);
-              loadRecords(); // Kayıtları yeniden yükle
-            } catch (error) {
-              Alert.alert('Hata', 'Kayıt silinirken bir hata oluştu: ' + error.message);
-            }
-          },
-          style: 'destructive' 
-        }
-      ]
-    );
+    setRecordToDelete(record);
+    setShowDeleteConfirm(true);
   };
 
   // Tarih formatla
   const formatDate = (dateString) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('tr-TR', {
+    const locale = language === 'en' ? 'en-US' : 'tr-TR';
+    return date.toLocaleDateString(locale, {
       year: 'numeric',
       month: 'long',
       day: 'numeric'
@@ -116,7 +105,7 @@ const RecordsListScreen = ({ navigation }) => {
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       <View style={styles.header}>
         <Text style={[styles.headerTitle, { color: theme.textColor }]}>
-          Çalışma Kayıtları
+          {t('records.title')}
         </Text>
         <TouchableOpacity 
           style={[styles.newButton, { backgroundColor: theme.primaryColor }]}
@@ -141,16 +130,37 @@ const RecordsListScreen = ({ navigation }) => {
         <View style={styles.emptyContainer}>
           <Ionicons name="calendar-outline" size={64} color={theme.textSecondary} />
           <Text style={[styles.emptyText, { color: theme.textSecondary }]}>
-            Henüz kaydedilmiş çalışma yok
+            {t('records.empty')}
           </Text>
           <TouchableOpacity
             style={[styles.startButton, { backgroundColor: theme.primaryColor }]}
             onPress={() => navigation.navigate('Stopwatch')}
           >
-            <Text style={styles.startButtonText}>Çalışmaya Başla</Text>
+            <Text style={styles.startButtonText}>{t('records.start_study')}</Text>
           </TouchableOpacity>
         </View>
       )}
+
+      <ConfirmDialog
+        visible={showDeleteConfirm}
+        title={t('records.delete_title')}
+        message={recordToDelete ? t('records.delete_body', { date: formatDate(recordToDelete.day) }) : t('records.delete_body', { date: '' })}
+        cancelText={t('common.cancel')}
+        confirmText={t('common.delete')}
+        onCancel={() => setShowDeleteConfirm(false)}
+        onConfirm={async () => {
+          setShowDeleteConfirm(false);
+          if (recordToDelete) {
+            try {
+              await DatabaseService.deleteDailyRecord(recordToDelete.id);
+              setRecordToDelete(null);
+              loadRecords();
+            } catch (error) {
+              Alert.alert(t('common.error'), error.message);
+            }
+          }
+        }}
+      />
     </View>
   );
 };

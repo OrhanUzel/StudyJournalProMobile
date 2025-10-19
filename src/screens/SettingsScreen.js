@@ -3,29 +3,17 @@ import { View, Text, StyleSheet, TouchableOpacity, Switch, Alert, ScrollView } f
 import { useTheme } from '../context/ThemeContext';
 import { useNotes } from '../context/NotesContext';
 import { Ionicons } from '@expo/vector-icons';
+import ConfirmDialog from '../components/ConfirmDialog';
 import { useLanguage } from '../context/LanguageContext';
 
 const SettingsScreen = () => {
   const { theme, isDarkMode, toggleTheme, spacing, borderRadius } = useTheme();
   const { clearAllNotes } = useNotes();
   const { t, language, setLanguage } = useLanguage();
+  const [showClearConfirm, setShowClearConfirm] = React.useState(false);
   
   const handleClearNotes = () => {
-    Alert.alert(
-      t('settings.clear_all_notes'),
-      t('home.delete_alert_body'),
-      [
-        { text: t('common.cancel'), style: 'cancel' },
-        { 
-          text: t('settings.clear_all_notes'), 
-          onPress: () => {
-            clearAllNotes();
-            Alert.alert(t('stopwatch.success'), t('records.title') + ' ' + t('settings.clear_all_notes'));
-          },
-          style: 'destructive',
-        },
-      ]
-    );
+    setShowClearConfirm(true);
   };
 
   return (
@@ -136,45 +124,8 @@ const SettingsScreen = () => {
           </View>
         </View>
         
-        {/* Data Management Section */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: theme.text }]}> 
-            {t('settings.data')}
-          </Text>
-          
-          <View
-            style={[
-              styles.settingCard,
-              {
-                backgroundColor: theme.card,
-                borderColor: theme.border,
-                borderRadius: borderRadius.lg,
-              }
-            ]}
-          >
-            <TouchableOpacity 
-              style={styles.settingRow}
-              onPress={handleClearNotes}
-            >
-              <View style={styles.settingInfo}>
-                <Ionicons 
-                  name="trash-outline" 
-                  size={22} 
-                  color={theme.error} 
-                  style={styles.settingIcon}
-                />
-                <Text style={[styles.settingText, { color: theme.text }]}> 
-                  {t('settings.clear_all_notes')}
-                </Text>
-              </View>
-              <Ionicons 
-                name="chevron-forward" 
-                size={20} 
-                color={theme.textSecondary} 
-              />
-            </TouchableOpacity>
-          </View>
-        </View>
+        {/* Data Management Section removed */}
+        <></>
         
         {/* About Section */}
         <View style={styles.section}>
@@ -212,6 +163,20 @@ const SettingsScreen = () => {
           </View>
         </View>
       </ScrollView>
+
+      <ConfirmDialog
+        visible={showClearConfirm}
+        title={t('settings.clear_all_notes')}
+        message={t('home.delete_alert_body')}
+        cancelText={t('common.cancel')}
+        confirmText={t('settings.clear_all_notes')}
+        onCancel={() => setShowClearConfirm(false)}
+        onConfirm={() => {
+          setShowClearConfirm(false);
+          clearAllNotes();
+          Alert.alert(t('stopwatch.success'), t('records.title') + ' ' + t('settings.clear_all_notes'));
+        }}
+      />
     </View>
   );
 };

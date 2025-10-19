@@ -76,13 +76,15 @@ const StatisticsScreen = () => {
   
   const calculateAverage = () => {
     if (stats.length === 0) return 0;
-    const days = {};
-    stats.forEach(session => {
-      const date = new Date(session.date).toDateString();
-      days[date] = (days[date] || 0) + (session.duration || 0);
-    });
-    const totalDays = Object.keys(days).length;
-    return totalDays > 0 ? Math.round(totalStudyTime / totalDays) : 0;
+    if (activePeriod === 'week') {
+      return Math.round(totalStudyTime / 7);
+    }
+    if (activePeriod === 'month') {
+      const now = new Date();
+      const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+      return Math.round(totalStudyTime / daysInMonth);
+    }
+    return Math.round(totalStudyTime / 7);
   };
 
   const averageStudyTime = calculateAverage();
@@ -172,11 +174,15 @@ const StatisticsScreen = () => {
               <Text style={[styles.statValue, { color: theme.text }]}>{formatMinutes(averageStudyTime)}</Text>
               <Text style={[styles.statLabel, { color: theme.textSecondary }]}>{t('summary.daily_avg')}</Text>
             </View>
-            <View style={styles.statItem}>
-              <Ionicons name="book-outline" size={24} color={theme.primary} />
-              <Text style={[styles.statValue, { color: theme.text }]} numberOfLines={1}>{getMostStudiedSubject()}</Text>
-              <Text style={[styles.statLabel, { color: theme.textSecondary }]}>{t('summary.most_subject')}</Text>
-            </View>
+            
+            {/* En çok çalışılan konu bölümü kaldırıldı */}
+            {false && (
+              <View style={styles.statItem}>
+                <Ionicons name="book-outline" size={24} color={theme.primary} />
+                <Text style={[styles.statValue, { color: theme.text }]} numberOfLines={1}>{/* getMostStudiedSubject() */}</Text>
+                <Text style={[styles.statLabel, { color: theme.textSecondary }]}>{t('summary.most_subject')}</Text>
+              </View>
+            )}
           </View>
         </View>
         {stats.length === 0 && (
