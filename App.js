@@ -6,17 +6,23 @@ import { ThemeProvider } from './src/context/ThemeContext';
 import { NotesProvider } from './src/context/NotesContext';
 import { LanguageProvider } from './src/context/LanguageContext';
 import { Platform } from 'react-native';
+import Constants from 'expo-constants';
 import AppNavigator from './src/navigation/AppNavigator';
 import StopwatchService from './src/services/StopwatchService';
 
 export default function App() {
   useEffect(() => {
+    // Expo Go veya web ortamında bildirimleri tamamen devre dışı bırak
+    if (Platform.OS === 'web' || (Constants?.appOwnership === 'expo')) {
+      return;
+    }
+
     let Notifications = null;
     try {
       Notifications = require('expo-notifications');
     } catch {}
 
-    if (!Notifications || Platform.OS === 'web') return;
+    if (!Notifications) return;
 
     Notifications.setNotificationHandler({
       handleNotification: async () => ({
@@ -41,12 +47,7 @@ export default function App() {
       })();
     }
 
-    // Açılışta bildirim iznini iste (web değilken)
-    (async () => {
-      try {
-        await StopwatchService.ensureNotificationPermission();
-      } catch {}
-    })();
+    // Şimdilik izin isteme veya bildirim planlama yok
   }, []);
 
   return (

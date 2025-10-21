@@ -36,6 +36,11 @@ const tr = {
   'settings.select_language': 'Dil seçimi',
   'settings.lang.tr': 'Türkçe',
   'settings.lang.en': 'English',
+  'settings.dev_contact': 'Geliştirici İletişim Bilgileri',
+  'common.github': 'GitHub',
+  'common.linkedin': 'LinkedIn',
+  'common.mail': 'Mail',
+  'common.buy_me_a_coffee': 'Buy me a coffee',
 
   // Statistics
   'statistics.title': 'İstatistikler',
@@ -103,6 +108,11 @@ const tr = {
   'common.ok': 'Tamam',
   'stopwatch.no_laps_to_save': 'Kaydedilecek tur bulunamadı.',
   'stopwatch.save_error': 'Kayıt sırasında bir hata oluştu: {message}',
+  // Abbreviations for segmented stopwatch
+  'stopwatch.hours_abbr': 'sa',
+  'stopwatch.minutes_abbr': 'dk',
+  'stopwatch.seconds_abbr': 'sn',
+  'stopwatch.centiseconds_abbr': 'sl',
 };
 
 const en = {
@@ -143,6 +153,11 @@ const en = {
   'settings.select_language': 'Language selection',
   'settings.lang.tr': 'Türkçe',
   'settings.lang.en': 'English',
+  'settings.dev_contact': 'Developer Contact Information',
+  'common.github': 'GitHub',
+  'common.linkedin': 'LinkedIn',
+  'common.mail': 'Mail',
+  'common.buy_me_a_coffee': 'Buy me a coffee',
 
   // Statistics
   'statistics.title': 'Statistics',
@@ -210,6 +225,11 @@ const en = {
   'common.ok': 'OK',
   'stopwatch.no_laps_to_save': 'No laps to save.',
   'stopwatch.save_error': 'An error occurred while saving: {message}',
+  // Abbreviations for segmented stopwatch
+  'stopwatch.hours_abbr': 'hr',
+  'stopwatch.minutes_abbr': 'min',
+  'stopwatch.seconds_abbr': 'sec',
+  'stopwatch.centiseconds_abbr': 'cs',
 };
 
 export default { tr, en };

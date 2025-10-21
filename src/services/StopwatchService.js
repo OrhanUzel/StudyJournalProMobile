@@ -1,12 +1,23 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
+import Constants from 'expo-constants';
 let Notifications = null;
-try {
-  // Dynamic require to avoid breaking web/dev if not installed
-  Notifications = require('expo-notifications');
-} catch (e) {
-  Notifications = null;
-}
+
+// Expo Go ve web'de hiçbir zaman expo-notifications modülünü çağırma
+const getNotifications = () => {
+  if (Notifications) return Notifications;
+  if (Platform.OS === 'web' || (Constants?.appOwnership === 'expo')) {
+    return null;
+  }
+  try {
+    // Lazy require: yalnızca Expo Go dışında ve web olmayan ortamlarda yükle
+    Notifications = require('expo-notifications');
+    return Notifications;
+  } catch (e) {
+    Notifications = null;
+    return null;
+  }
+};
 
 /**
  * Basit bir EventEmitter sınıfı
@@ -107,11 +118,12 @@ class StopwatchService {
   }
 
   async ensureNotificationPermission() {
-    if (!Notifications || Platform.OS === 'web') return false;
+    const N = getNotifications();
+    if (!N || Platform.OS === 'web' || (Platform.OS === 'android' && __DEV__)) return false;
     try {
-      const settings = await Notifications.getPermissionsAsync();
+      const settings = await N.getPermissionsAsync();
       if (settings.status !== 'granted') {
-        const req = await Notifications.requestPermissionsAsync();
+        const req = await N.requestPermissionsAsync();
         return req.status === 'granted';
       }
       return true;
@@ -121,12 +133,15 @@ class StopwatchService {
   }
 
   async scheduleInactivityReminder(minutes = 1) {
-    if (!Notifications || Platform.OS === 'web') return;
+    // Bildirim gönderimi devre dışı (yorum satırına alınmıştır).
+    return;
+    /*
+    if (!Notifications || Platform.OS === 'web' || (Platform.OS === 'android' && __DEV__)) return;
     const granted = await this.ensureNotificationPermission();
     if (!granted) return;
     try {
-      const triggerSeconds = minutes * 60;
-
+      const triggerSeconds = Math.max(60, minutes * 60); // en az 60 saniye
+  
       // Ensure Android channel exists (idempotent)
       if (Platform.OS === 'android' && Notifications.setNotificationChannelAsync) {
         try {
@@ -136,7 +151,7 @@ class StopwatchService {
           });
         } catch {}
       }
-
+  
       const id = await Notifications.scheduleNotificationAsync({
         content: {
           title: 'Çalışma süreniz devam ediyor',
@@ -149,6 +164,7 @@ class StopwatchService {
     } catch (e) {
       // sessiz
     }
+    */
   }
 
   async cancelInactivityReminder() {

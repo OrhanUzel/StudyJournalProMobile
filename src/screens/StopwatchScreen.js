@@ -18,29 +18,40 @@ import StopwatchService from '../services/StopwatchService';
 import DatabaseService from '../services/DatabaseService';
 import { DailyRecord, LapRecord } from '../models/RecordModels';
 import ConfirmDialog from '../components/ConfirmDialog';
+import Toast from '../components/Toast';
 
 // Salise etiketini bağımsız güncelleyen küçük bileşen
 const HundredthsTicker = React.memo(({ isRunning, color, coarseTime }) => {
   const [hundredths, setHundredths] = useState('00');
 
   useEffect(() => {
-    let id;
-    const tick = () => {
+    let rafId;
+    let lastHund = -1;
+
+    const update = () => {
       const ms = StopwatchService.getCurrentTotalMs();
-      const hund = Math.floor((ms % 1000) / 10).toString().padStart(2, '0');
-      setHundredths(hund);
+      const hundNum = Math.floor((ms % 1000) / 10);
+      if (hundNum !== lastHund) {
+        lastHund = hundNum;
+        setHundredths(hundNum.toString().padStart(2, '0'));
+      }
+      rafId = requestAnimationFrame(update);
     };
-    // Initial update or after reset/start/stop
-    tick();
+
     if (isRunning) {
-      id = setInterval(tick, 16);
+      update();
+    } else {
+      // Not running: recompute on mount and when coarseTime changes (rehydrate)
+      const ms = StopwatchService.getCurrentTotalMs();
+      const hundNum = Math.floor((ms % 1000) / 10);
+      setHundredths(hundNum.toString().padStart(2, '0'));
     }
+
     return () => {
-      if (id) clearInterval(id);
+      if (rafId) cancelAnimationFrame(rafId);
     };
   }, [isRunning, coarseTime]);
 
-  // Ensure hundredths resets to '00' whenever coarseTime shows zero
   useEffect(() => {
     if (coarseTime === '00:00:00') {
       setHundredths('00');
@@ -48,12 +59,50 @@ const HundredthsTicker = React.memo(({ isRunning, color, coarseTime }) => {
   }, [coarseTime]);
 
   return (
-    <Text style={[styles.fractionText, { color }]}>.{hundredths}</Text>
+    <View style={[styles.timeSegment, styles.hundredthsSegment]}>
+      <Text style={[styles.hundredthsText, { color }]}>{hundredths}</Text>
+    </View>
+  );
+});
+
+// Tekil zaman parçalarını (saat/dakika/saniye) gösteren küçük bileşen
+const TimerSegment = React.memo(({ value, label, color }) => {
+  return (
+    <View style={styles.timeSegment}>
+      <Text style={[styles.timerText, { color }]}>{value}</Text>
+      <Text style={[
+        styles.segmentLabel,
+        { color },
+      ]}>{label}</Text>
+    </View>
+  );
+});
+
+const Separator = React.memo(({ char, color, gap = 6, vGap = 6 }) => {
+  if (char === ':') {
+    const dotSize = Platform.OS === 'web' ? 6 : 7;
+    const lineHeight = Platform.OS === 'web' ? 56 : 58; // numeric height (mobile biraz daha büyük)
+    const innerVGap = Platform.OS === 'web' ? vGap : Math.max(2, vGap - 2);
+    const paddingVertical = Math.max(0, (lineHeight - (dotSize * 2 + innerVGap)) / 2);
+    const adjustY = Platform.OS === 'web' ? -10 : -6; // mobilde biraz daha az yukarı taşı
+    return (
+      <View style={[styles.separator, { marginHorizontal: gap }]}> 
+        <View style={[styles.colonContainer, { height: lineHeight, justifyContent: 'space-between', paddingVertical, transform: [{ translateY: adjustY }] }]}> 
+          <View style={[styles.colonDot, { width: dotSize, height: dotSize, borderRadius: dotSize / 2, backgroundColor: color, opacity: 0.6 }]} />
+          <View style={[styles.colonDot, { width: dotSize, height: dotSize, borderRadius: dotSize / 2, backgroundColor: color, opacity: 0.6 }]} />
+        </View>
+      </View>
+    );
+  }
+  return (
+    <View style={[styles.separator, { marginHorizontal: gap }]}>
+      <Text style={[styles.separatorText, { color, opacity: 0.6 }]}>{char}</Text>
+    </View>
   );
 });
 
 const StopwatchScreen = ({ navigation }) => {
-  const { theme } = useTheme();
+  const { theme, isDarkMode } = useTheme();
   const { t } = useLanguage();
   const [coarseTime, setCoarseTime] = useState('00:00:00');
   const [laps, setLaps] = useState([]);
@@ -64,7 +113,8 @@ const StopwatchScreen = ({ navigation }) => {
   const [wasRunningBeforeSave, setWasRunningBeforeSave] = useState(false);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
-  
+  const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(50)).current;
 
@@ -262,16 +312,12 @@ const StopwatchScreen = ({ navigation }) => {
       dailyRecord.totalTimeForDay = await DatabaseService.recomputeTotalTimeForDay(dailyRecordId);
       await DatabaseService.updateDailyRecord(dailyRecord);
 
-      Alert.alert(
-        t('stopwatch.success'),
-        t('stopwatch.saved'),
-        [{ text: t('common.ok'), onPress: () => {
-          setShowSavePanel(false);
-          setDailyNote('');
-          setLapNote('');
-          StopwatchService.reset();
-        }}]
-      );
+      setShowSavePanel(false);
+      setDailyNote('');
+      setLapNote('');
+      StopwatchService.reset();
+      setToastMessage(t('stopwatch.saved'));
+      setShowToast(true);
     } catch (error) {
       Alert.alert(t('common.error'), error.message);
     }
@@ -341,11 +387,30 @@ const StopwatchScreen = ({ navigation }) => {
       {/* Kronometre Ekranı */}
       <View style={styles.timerContainer}>
         <View style={styles.timerRow}>
-          <Text style={[styles.timerText, { color: theme.textColor }]}>
-            {coarseTime}
-          </Text>
-          <HundredthsTicker isRunning={isRunning} color={theme.textColor} coarseTime={coarseTime} />
-        </View>
+        {(() => {
+          const [h, m, s] = coarseTime.split(':');
+          const hoursInt = parseInt(h, 10) || 0;
+          return (
+            <>
+              {hoursInt > 0 ? (
+                <>
+                  <TimerSegment value={h} label={t('stopwatch.hours_abbr')} color={theme.textColor} />
+                  <Separator char=":" color={theme.textColor} />
+                </>
+              ) : null}
+              <TimerSegment value={m} label={t('stopwatch.minutes_abbr')} color={theme.textColor} />
+              <Separator char=":" color={theme.textColor} />
+              <TimerSegment value={s} label={t('stopwatch.seconds_abbr')} color={theme.textColor} />
+              <Separator char="." color={theme.textColor} gap={1} />
+              <HundredthsTicker 
+                isRunning={isRunning} 
+                color={theme.textColor} 
+                coarseTime={coarseTime}
+              />
+            </>
+          );
+        })()}
+      </View>
       </View>
 
       {/* Kontrol Butonları */}
@@ -364,6 +429,7 @@ const StopwatchScreen = ({ navigation }) => {
           <TouchableOpacity 
             style={[styles.controlButton, { backgroundColor: theme.dangerColor }]} 
             onPress={handleReset}
+            disabled={showSavePanel}
           >
             <Ionicons name="refresh" size={24} color="#fff" />
           </TouchableOpacity>
@@ -376,6 +442,7 @@ const StopwatchScreen = ({ navigation }) => {
               { backgroundColor: isRunning ? theme.warningColor : theme.primaryColor }
             ]}
             onPress={isRunning ? handleStop : handleStart}
+            disabled={showSavePanel}
           >
             <Ionicons 
               name={isRunning ? "pause" : "play"} 
@@ -392,6 +459,7 @@ const StopwatchScreen = ({ navigation }) => {
                 { backgroundColor: theme.accentColor }
               ]} 
               onPress={handleLap}
+              disabled={showSavePanel}
             >
               <Ionicons name="flag" size={24} color="#fff" />
             </TouchableOpacity>
@@ -408,7 +476,7 @@ const StopwatchScreen = ({ navigation }) => {
               if (isRunning) handleStop();
               setShowSavePanel(true);
             }}
-            disabled={(laps.length === 0 && StopwatchService.getCurrentTotalMs() === 0)}
+            disabled={(laps.length === 0 && StopwatchService.getCurrentTotalMs() === 0) || showSavePanel}
           >
             <Ionicons name="save" size={24} color="#fff" />
           </TouchableOpacity>
@@ -423,6 +491,7 @@ const StopwatchScreen = ({ navigation }) => {
           placeholderTextColor={theme.textSecondary}
           value={lapNote}
           onChangeText={setLapNote}
+          editable={!showSavePanel}
         />
       </View>
 
@@ -448,6 +517,16 @@ const StopwatchScreen = ({ navigation }) => {
           </View>
         )}
       </View>
+
+      {showSavePanel && (
+        <View
+          pointerEvents="auto"
+          style={[
+            styles.saveBackdrop,
+            { backgroundColor: isDarkMode ? 'rgba(0,0,0,0.45)' : 'rgba(0,0,0,0.25)' },
+          ]}
+        />
+      )}
 
       {/* Kaydetme Paneli */}
       <Animated.View 
@@ -478,6 +557,7 @@ const StopwatchScreen = ({ navigation }) => {
           value={dailyNote}
           onChangeText={setDailyNote}
           multiline
+          editable={!showSavePanel}
         />
 
         <Text style={[styles.saveConfirmText, { color: theme.textColor }]}>{t('stopwatch.confirm_save')}</Text>
@@ -508,6 +588,12 @@ const StopwatchScreen = ({ navigation }) => {
           setLapNote('');
         }}
       />
+
+      <Toast
+        visible={showToast}
+        message={toastMessage}
+        onHide={() => setShowToast(false)}
+      />
     </View>
   );
 };
@@ -520,21 +606,67 @@ const styles = StyleSheet.create({
   timerContainer: {
     alignItems: 'center',
     marginVertical: 30,
+    
   },
   timerRow: {
     flexDirection: 'row',
-    alignItems: 'baseline',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   timerText: {
-    fontSize: 48,
+    fontSize: 65,//56
     fontWeight: 'bold',
+    includeFontPadding: false,
     fontVariant: ['tabular-nums'],
+      
+
   },
-  fractionText: {
-    fontSize: 36,
-    fontWeight: 'bold',
-    fontVariant: ['tabular-nums'],
-    marginLeft: 4,
+  hundredthsText: {
+    fontSize: 40,//32 idi
+    fontWeight: 'bold',//bold
+    includeFontPadding: false,
+  },
+  separator: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    alignSelf: 'stretch',
+  },
+  separatorText: {
+    fontSize: 40,
+    fontWeight: 'normal',
+    includeFontPadding: false,
+    textAlign: 'center',
+    lineHeight: 56,
+    transform: [{ translateY: -2 }],
+  },
+  colonContainer: {
+    height: 56,//56
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  colonDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    marginVertical: 2,
+  },
+  timeSegment: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    //flex: 1, // Responsive genişlik
+    paddingHorizontal: 4, // Minimal padding
+    minWidth:42, // Sabit genişlik - label titreşimini önler //72
+  },
+  hundredthsSegment: {
+    marginLeft: 0,
+  },
+  segmentLabel: {
+    marginTop: 4,
+    fontSize: 14,
+    opacity: 0.8,
+    textAlign: 'center',
+    width: '100%', // Label tam genişliği kaplar
+    position: 'relative', // Responsive positioning
   },
   controlsContainer: {
     flexDirection: 'row',
@@ -655,6 +787,15 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: -3 },
     shadowOpacity: 0.3,
     shadowRadius: 5,
+    zIndex: 20,
+  },
+  saveBackdrop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 10,
   },
   savePanelHeader: {
     flexDirection: 'row',

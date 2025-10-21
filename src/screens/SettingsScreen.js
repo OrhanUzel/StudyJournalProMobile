@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Switch, Alert, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Switch, Alert, ScrollView, Linking } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { useNotes } from '../context/NotesContext';
 import { Ionicons } from '@expo/vector-icons';
@@ -14,6 +14,13 @@ const SettingsScreen = () => {
   
   const handleClearNotes = () => {
     setShowClearConfirm(true);
+  };
+
+  const DEV_LINKS = {
+    github: 'https://github.com/yourusername',
+    linkedin: 'https://www.linkedin.com/in/yourusername',
+    mail: 'mailto:yourmail@example.com',
+    coffee: 'https://buymeacoffee.com/yourusername',
   };
 
   return (
@@ -155,6 +162,46 @@ const SettingsScreen = () => {
               </Text>
               
               <View style={styles.divider} />
+
+              {/* Developer Contact Information */}
+              <Text style={[styles.sectionTitle, { color: theme.text }]}>
+                {t('settings.dev_contact')}
+              </Text>
+              <View style={styles.contactRow}>
+                <TouchableOpacity
+                  style={[styles.contactButton, { borderColor: theme.border, backgroundColor: theme.surface, borderRadius: borderRadius.md }]}
+                  onPress={() => Linking.openURL(DEV_LINKS.github)}
+                >
+                  <Ionicons name="logo-github" size={20} color={theme.text} style={styles.contactIcon} />
+                  <Text style={[styles.contactText, { color: theme.text }]}>{t('common.github')}</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.contactButton, { borderColor: theme.border, backgroundColor: theme.surface, borderRadius: borderRadius.md }]}
+                  onPress={() => Linking.openURL(DEV_LINKS.linkedin)}
+                >
+                  <Ionicons name="logo-linkedin" size={20} color={theme.text} style={styles.contactIcon} />
+                  <Text style={[styles.contactText, { color: theme.text }]}>{t('common.linkedin')}</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.contactButton, { borderColor: theme.border, backgroundColor: theme.surface, borderRadius: borderRadius.md }]}
+                  onPress={() => Linking.openURL(DEV_LINKS.mail)}
+                >
+                  <Ionicons name="mail" size={20} color={theme.text} style={styles.contactIcon} />
+                  <Text style={[styles.contactText, { color: theme.text }]}>{t('common.mail')}</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.contactButton, { borderColor: theme.border, backgroundColor: theme.surface, borderRadius: borderRadius.md }]}
+                  onPress={() => Linking.openURL(DEV_LINKS.coffee)}
+                >
+                  <Ionicons name="cafe" size={20} color={theme.text} style={styles.contactIcon} />
+                  <Text style={[styles.contactText, { color: theme.text }]}>{t('common.buy_me_a_coffee')}</Text>
+                </TouchableOpacity>
+              </View>
+              
+              <View style={styles.divider} />
               
               <Text style={[styles.copyright, { color: theme.textSecondary }]}> 
                 {t('settings.copyright')}
@@ -255,6 +302,30 @@ const styles = StyleSheet.create({
     backgroundColor: '#E5E7EB',
     width: '100%',
     marginVertical: 16,
+  },
+  contactRow: {
+    width: '100%',
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    gap: 8,
+    marginBottom: 4,
+  },
+  contactButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    marginBottom: 8,
+    flex: 1,
+  },
+  contactIcon: {
+    marginRight: 8,
+  },
+  contactText: {
+    fontSize: 14,
+    fontWeight: '600',
   },
   copyright: {
     fontSize: 12,

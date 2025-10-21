@@ -33,7 +33,7 @@ const HomeStack = () => {
           borderBottomWidth: 0,
         },
         headerTintColor: theme.textColor,
-        cardStyle: { backgroundColor: theme.background },
+        contentStyle: { backgroundColor: theme.background },
       }}
     >
       <Stack.Screen 
@@ -69,7 +69,7 @@ const StopwatchStack = () => {
           borderBottomWidth: 0,
         },
         headerTintColor: theme.textColor,
-        cardStyle: { backgroundColor: theme.background },
+        contentStyle: { backgroundColor: theme.background },
       }}
     >
       <Stack.Screen 
@@ -100,7 +100,8 @@ const RecordsStack = () => {
           borderBottomWidth: 0,
         },
         headerTintColor: theme.textColor,
-        cardStyle: { backgroundColor: theme.background },
+        contentStyle: { backgroundColor: theme.background },
+        animation: 'fade',
       }}
     >
       <Stack.Screen 
