@@ -1,12 +1,17 @@
 {
-  "cli": { "version": ">= 4.6.0" },
+  "cli": {
+    "version": ">= 4.6.0",
+    "appVersionSource": "remote"
+  },
   "build": {
     "preview": {
       "distribution": "internal",
-      "android": { "buildType": "apk" }
+      "android": { "buildType": "apk" },
+      "env": { "NODE_ENV": "production" }
     },
     "production": {
-      "android": { "buildType": "app-bundle" }
+      "android": { "buildType": "app-bundle" },
+      "env": { "NODE_ENV": "production" }
     }
   },
   "submit": {

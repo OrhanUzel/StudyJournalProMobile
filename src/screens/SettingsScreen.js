@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Switch, Alert, ScrollView, Linking } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Switch, Alert, ScrollView, Linking, Image, Modal } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { useNotes } from '../context/NotesContext';
 import { Ionicons } from '@expo/vector-icons';
@@ -11,17 +11,38 @@ const SettingsScreen = () => {
   const { clearAllNotes } = useNotes();
   const { t, language, setLanguage } = useLanguage();
   const [showClearConfirm, setShowClearConfirm] = React.useState(false);
+  const [showIconsModal, setShowIconsModal] = React.useState(false);
   
   const handleClearNotes = () => {
     setShowClearConfirm(true);
   };
 
   const DEV_LINKS = {
-    github: 'https://github.com/yourusername',
-    linkedin: 'https://www.linkedin.com/in/yourusername',
-    mail: 'mailto:yourmail@example.com',
-    coffee: 'https://buymeacoffee.com/yourusername',
+    github: 'https://github.com/orhanuzel',
+    linkedin: 'https://www.linkedin.com/in/orhanuzel/',
+    mail: 'mailto:orhanuzel@yahoo.com',
+    coffee: 'https://buymeacoffee.com/orhanuzel',
   };
+
+  // 2x2 grid için asset tabanlı iletişim öğeleri
+  const CONTACT_ITEMS = [
+    { key: 'github', label: t('common.github'), url: DEV_LINKS.github, icon: require('../../assets/github32.png') },
+    { key: 'linkedin', label: t('common.linkedin'), url: DEV_LINKS.linkedin, icon: require('../../assets/linkedin.png') },
+    { key: 'mail', label: t('common.mail'), url: DEV_LINKS.mail, icon: require('../../assets/mail32.png') },
+    { key: 'coffee', label: t('common.buy_me_a_coffee'), url: DEV_LINKS.coffee, icon: require('../../assets/bmc-logo-yellow2.png') },
+  ];
+
+  const ContactButton = ({ item }) => (
+    <TouchableOpacity
+      style={[styles.contactCard, { borderColor: theme.border, backgroundColor: theme.surface, borderRadius: borderRadius.md }]}
+      onPress={() => Linking.openURL(item.url)}
+      accessibilityRole="button"
+      accessibilityLabel={item.label}
+    >
+      <Image source={item.icon} style={styles.contactImage} resizeMode="contain" />
+      <Text style={[styles.contactLabel, { color: theme.text }]}>{item.label}</Text>
+    </TouchableOpacity>
+  );
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
@@ -164,42 +185,21 @@ const SettingsScreen = () => {
               <View style={styles.divider} />
 
               {/* Developer Contact Information */}
-              <Text style={[styles.sectionTitle, { color: theme.text }]}>
+              <Text style={[styles.sectionTitle, { color: theme.text }]}> 
                 {t('settings.dev_contact')}
               </Text>
-              <View style={styles.contactRow}>
-                <TouchableOpacity
-                  style={[styles.contactButton, { borderColor: theme.border, backgroundColor: theme.surface, borderRadius: borderRadius.md }]}
-                  onPress={() => Linking.openURL(DEV_LINKS.github)}
-                >
-                  <Ionicons name="logo-github" size={20} color={theme.text} style={styles.contactIcon} />
-                  <Text style={[styles.contactText, { color: theme.text }]}>{t('common.github')}</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={[styles.contactButton, { borderColor: theme.border, backgroundColor: theme.surface, borderRadius: borderRadius.md }]}
-                  onPress={() => Linking.openURL(DEV_LINKS.linkedin)}
-                >
-                  <Ionicons name="logo-linkedin" size={20} color={theme.text} style={styles.contactIcon} />
-                  <Text style={[styles.contactText, { color: theme.text }]}>{t('common.linkedin')}</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={[styles.contactButton, { borderColor: theme.border, backgroundColor: theme.surface, borderRadius: borderRadius.md }]}
-                  onPress={() => Linking.openURL(DEV_LINKS.mail)}
-                >
-                  <Ionicons name="mail" size={20} color={theme.text} style={styles.contactIcon} />
-                  <Text style={[styles.contactText, { color: theme.text }]}>{t('common.mail')}</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={[styles.contactButton, { borderColor: theme.border, backgroundColor: theme.surface, borderRadius: borderRadius.md }]}
-                  onPress={() => Linking.openURL(DEV_LINKS.coffee)}
-                >
-                  <Ionicons name="cafe" size={20} color={theme.text} style={styles.contactIcon} />
-                  <Text style={[styles.contactText, { color: theme.text }]}>{t('common.buy_me_a_coffee')}</Text>
-                </TouchableOpacity>
+              <View style={styles.contactGrid}>
+                {CONTACT_ITEMS.map(item => (
+                  <ContactButton key={item.key} item={item} />
+                ))}
               </View>
+
+              {/* Icons and References Link */}
+              <TouchableOpacity onPress={() => setShowIconsModal(true)}>
+                <Text style={[styles.iconsLink, { color: theme.primary }]}> 
+                  {t('settings.icons_refs_link')}
+                </Text>
+              </TouchableOpacity>
               
               <View style={styles.divider} />
               
@@ -210,6 +210,52 @@ const SettingsScreen = () => {
           </View>
         </View>
       </ScrollView>
+
+      {/* Icons & References Modal */}
+      <Modal visible={showIconsModal} transparent animationType="fade" onRequestClose={() => setShowIconsModal(false)}>
+        <View style={styles.modalBackdrop}>
+          <View style={[styles.modalContent, { backgroundColor: theme.card, borderColor: theme.border, borderRadius: borderRadius.lg }]}> 
+            <Text style={[styles.modalTitle, { color: theme.text }]}>{t('settings.icons_refs_title')}</Text>
+            <ScrollView style={{ maxHeight: 360 }} showsVerticalScrollIndicator={false}>
+              <View style={styles.attrItem}>
+                <Image source={require('../../assets/icon.png')} style={styles.attrIcon} />
+                <TouchableOpacity onPress={() => Linking.openURL('https://www.flaticon.com/free-icons/calendar')}>
+                  <Text style={[styles.attrText, { color: theme.primary }]}>Calendar icons created by Freepik - Flaticon</Text>
+                </TouchableOpacity>
+              </View>
+               <View style={styles.attrItem}>
+                <Image source={require('../../assets/mail32.png')} style={styles.attrIcon} />
+                <TouchableOpacity onPress={() => Linking.openURL('https://www.flaticon.com/free-icons/email')}>
+                  <Text style={[styles.attrText, { color: theme.primary }]}>Email icons created by ChilliColor - Flaticon</Text>
+                </TouchableOpacity>
+              </View>
+              <View style={styles.attrItem}>
+                <Image source={require('../../assets/github32.png')} style={styles.attrIcon} />
+                <TouchableOpacity onPress={() => Linking.openURL('https://www.flaticon.com/free-icons/github')}>
+                  <Text style={[styles.attrText, { color: theme.primary }]}>GitHub icons created by Ruslan Babkin - Flaticon</Text>
+                </TouchableOpacity>
+              </View>
+              <View style={styles.attrItem}>
+                <Image source={require('../../assets/linkedin.png')} style={styles.attrIcon} />
+                <TouchableOpacity onPress={() => Linking.openURL('https://www.flaticon.com/free-icons/linkedin')}>
+                  <Text style={[styles.attrText, { color: theme.primary }]}>Linkedin icons created by riajulislam - Flaticon</Text>
+                </TouchableOpacity>
+              </View>
+             
+              <View style={styles.attrItem}>
+                <Image source={require('../../assets/bmc-logo-yellow2.png')} style={styles.attrIcon} />
+                <TouchableOpacity onPress={() => Linking.openURL('https://www.buymeacoffee.com')}>
+                  <Text style={[styles.attrText, { color: theme.primary }]}>Buy Me a Coffee logo</Text>
+                </TouchableOpacity>
+              </View>
+            
+            </ScrollView>
+            <TouchableOpacity style={[styles.modalCloseBtn, { backgroundColor: theme.primary }]} onPress={() => setShowIconsModal(false)}>
+              <Text style={styles.modalCloseText}>{t('common.close')}</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
 
       <ConfirmDialog
         visible={showClearConfirm}
@@ -320,15 +366,78 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     flex: 1,
   },
-  contactIcon: {
-    marginRight: 8,
+  // Yeni grid ve kart stilleri
+  contactGrid: {
+    width: '100%',
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
   },
-  contactText: {
-    fontSize: 14,
+  contactCard: {
+    width: '48%',
+    borderWidth: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    marginBottom: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  contactImage: {
+    width: 28,
+    height: 28,
+    marginBottom: 8,
+  },
+  contactLabel: {
+    fontSize: 13,
     fontWeight: '600',
+    textAlign: 'center',
   },
-  copyright: {
-    fontSize: 12,
+  iconsLink: {
+    marginTop: 8,
+    fontSize: 13,
+    textDecorationLine: 'underline',
+  },
+  // Modal stilleri
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.35)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 24,
+  },
+  modalContent: {
+    width: '100%',
+    maxWidth: 520,
+    borderWidth: 1,
+    padding: 16,
+  },
+  modalTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    marginBottom: 12,
+  },
+  attrItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+  },
+  attrIcon: {
+    width: 26,
+    height: 26,
+    marginRight: 10,
+  },
+  attrText: {
+    fontSize: 14,
+  },
+  modalCloseBtn: {
+    marginTop: 16,
+    paddingVertical: 10,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  modalCloseText: {
+    color: '#FFFFFF',
+    fontWeight: '600',
   },
 });
 

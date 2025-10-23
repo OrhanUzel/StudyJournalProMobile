@@ -417,7 +417,7 @@ const StopwatchScreen = ({ navigation }) => {
       {(!isRunning && coarseTime === '00:00:00' && laps.length === 0) ? (
         <View style={{ alignItems: 'center', marginBottom: 20 }}>
           <TouchableOpacity 
-            style={[styles.startWideButton, { backgroundColor: theme.primaryColor }]} 
+            style={[styles.startWideButton, { backgroundColor: theme.successColor }]} 
             onPress={handleStart}
           >
             <Ionicons name="play" size={24} color="#fff" />
@@ -439,7 +439,7 @@ const StopwatchScreen = ({ navigation }) => {
             style={[
               styles.controlButton,
               !isRunning ? styles.startButtonStopped : null,
-              { backgroundColor: isRunning ? theme.warningColor : theme.primaryColor }
+              { backgroundColor: isRunning ? theme.successColor : theme.successColor }
             ]}
             onPress={isRunning ? handleStop : handleStart}
             disabled={showSavePanel}
@@ -456,7 +456,7 @@ const StopwatchScreen = ({ navigation }) => {
             <TouchableOpacity 
               style={[
                 styles.controlButton, 
-                { backgroundColor: theme.accentColor }
+                { backgroundColor: theme.warningColor }
               ]} 
               onPress={handleLap}
               disabled={showSavePanel}
@@ -469,7 +469,7 @@ const StopwatchScreen = ({ navigation }) => {
           <TouchableOpacity 
             style={[
               styles.controlButton, 
-              { backgroundColor: theme.successColor, opacity: (laps.length > 0 || StopwatchService.getCurrentTotalMs() > 0) ? 1 : 0.5 }
+              { backgroundColor: theme.primaryColor, opacity: (laps.length > 0 || StopwatchService.getCurrentTotalMs() > 0) ? 1 : 0.5 }
             ]} 
             onPress={() => {
               setWasRunningBeforeSave(isRunning);

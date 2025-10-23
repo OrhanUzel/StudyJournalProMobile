@@ -30,7 +30,8 @@ const tr = {
   'settings.about': 'Hakkında',
   'settings.app_name': 'Study Journal Pro',
   'settings.version': 'Sürüm 1.0.0',
-  'settings.description': 'Çalışma seanslarını takip etmek, not almak ve istatistikleri görüntülemek için minimal bir uygulama.',
+  //'settings.description': 'Çalışma seanslarını takip etmek, not almak ve istatistikleri görüntülemek için minimal bir uygulama.',
+  'settings.description': 'Çalışma Günlüğüm Pro, zamanı en verimli şekilde yönetmeniz için tasarlanmış modern bir çalışma günlüğü uygulamasıdır. Sade, şık ve reklamsız arayüzü sayesinde dikkat dağıtmadan odaklanabilir, tur sürelerinizi kolayca kaydedebilirsiniz. Her bir çalışma turunuz için farklı notlar atayabilir bu notları sonrasında değiştirebilir veya silebilirsiniz. Kayıt ettiğiniz çalışmalarınızı yerel bilgisayarınızda sorunsuz bir şekilde saklayabilirsiniz. Saklanan çalışma günlüklerinizi uygulamamız sayesinde görüntüleyebilirsiniz. Basitliği, işlevselliği ve modern tasarımı bir araya getiren Çalışma Günlüğüm Pro uygulaması, çalışma hayatınıza değer katar.',
   'settings.copyright': '© 2025 Study Journal Pro',
   'settings.language': 'Dil',
   'settings.select_language': 'Dil seçimi',
@@ -41,6 +42,9 @@ const tr = {
   'common.linkedin': 'LinkedIn',
   'common.mail': 'Mail',
   'common.buy_me_a_coffee': 'Buy me a coffee',
+  'settings.icons_refs_link': 'Uygulamada kullanılan ikon ve referanslar',
+  'settings.icons_refs_title': 'Uygulamada Kullanılan İkonlar ve Referanslar',
+  'common.close': 'Kapat',
 
   // Statistics
   'statistics.title': 'İstatistikler',
@@ -147,7 +151,14 @@ const en = {
   'settings.about': 'About',
   'settings.app_name': 'Study Journal Pro',
   'settings.version': 'Version 1.0.0',
-  'settings.description': 'A minimal, elegant app to track your study sessions, take notes, and view progress statistics.',
+  'settings.description':'Study Journal Pro is a modern study journal app designed to'+ 
+  'help you manage your time most efficiently. Simple and stylish add-ons allow you to '+
+  'focus without distractions and easily record your lap times. You can assign different'+
+  ' notes to each study lap, which you can then display or delete. You can seamlessly store'+
+  ' your work locally and view your stored work diaries through our app. '+
+  'Combining simplicity, clarity, and a modern design, Study Journal Pro adds'+
+  ' value to your study and work life.',// 'A minimal, elegant app to track your study sessions, take notes, and view progress statistics.',
+  
   'settings.copyright': '© 2025 Study Journal Pro',
   'settings.language': 'Language',
   'settings.select_language': 'Language selection',
@@ -158,7 +169,9 @@ const en = {
   'common.linkedin': 'LinkedIn',
   'common.mail': 'Mail',
   'common.buy_me_a_coffee': 'Buy me a coffee',
-
+  'settings.icons_refs_link': 'Icons and References Used in the Application',
+  'settings.icons_refs_title': 'License Information and Icon Attributions',
+  'common.close': 'Close',
   // Statistics
   'statistics.title': 'Statistics',
   'statistics.subtitle': 'Track your study progress',
