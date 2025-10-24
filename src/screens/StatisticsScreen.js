@@ -54,7 +54,7 @@ const StatisticsScreen = () => {
       try {
         const records = await DatabaseService.getAllDailyRecords();
         const dailyStats = records
-          .filter((r) => new Date(r.day) >= startDate)
+          .filter((r) => new Date(`${r.day}T00:00:00`) >= startDate)
           .map((r) => ({
             date: r.day,
             duration: hmsToMinutes(r.totalTimeForDay),

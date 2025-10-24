@@ -14,10 +14,14 @@ import { useLanguage } from '../context/LanguageContext';
 import DatabaseService from '../services/DatabaseService';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { useIsFocused } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 
 const RecordsListScreen = ({ navigation }) => {
   const { theme } = useTheme();
   const { t, language } = useLanguage();
+  const insets = useSafeAreaInsets();
+  const tabBarHeight = useBottomTabBarHeight();
   const [records, setRecords] = useState([]);
   const [loading, setLoading] = useState(true);
   const isFocused = useIsFocused();
@@ -50,9 +54,9 @@ const RecordsListScreen = ({ navigation }) => {
     setShowDeleteConfirm(true);
   };
 
-  // Tarih formatla
+  // Tarih formatla (gün alanını yerel zamanla yorumla)
   const formatDate = (dateString) => {
-    const date = new Date(dateString);
+    const date = new Date(`${dateString}T00:00:00`);
     const locale = language === 'en' ? 'en-US' : 'tr-TR';
     return date.toLocaleDateString(locale, {
       year: 'numeric',
@@ -124,7 +128,7 @@ const RecordsListScreen = ({ navigation }) => {
           data={records}
           renderItem={renderRecordItem}
           keyExtractor={(item) => item.id.toString()}
-          contentContainerStyle={styles.recordsList}
+          contentContainerStyle={[styles.recordsList, { paddingBottom: insets.bottom + tabBarHeight + 16 }]}
         />
       ) : (
         <View style={styles.emptyContainer}>

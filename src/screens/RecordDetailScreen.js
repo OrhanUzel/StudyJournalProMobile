@@ -62,7 +62,9 @@ const RecordDetailScreen = ({ route, navigation }) => {
     }
     try {
       const nextSessionIndex = (await DatabaseService.getMaxSessionIndex(record.id)) + 1;
-      const endLocal = new Date(`${record.day}T${manualEndTime}:00`);
+      const [y, m, d] = String(record.day).split('-').map(Number);
+      const [hh, mm] = String(manualEndTime).split(':').map(Number);
+      const endLocal = new Date(y || 0, (m || 1) - 1, d || 1, hh || 0, mm || 0, 0);
       const lapRecord = new LapRecord(
         null,
         endLocal.toISOString(),
@@ -108,9 +110,9 @@ const RecordDetailScreen = ({ route, navigation }) => {
     }
   };
 
-  // Tarih formatla
+  // Tarih formatla (gün alanını yerel zamanla yorumla)
   const formatDate = (dateString) => {
-    const date = new Date(dateString);
+    const date = new Date(`${dateString}T00:00:00`);
     const locale = language === 'en' ? 'en-US' : 'tr-TR';
     return date.toLocaleDateString(locale, {
       year: 'numeric',

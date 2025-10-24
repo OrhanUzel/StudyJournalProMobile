@@ -2,6 +2,7 @@ import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // Import screens
 import HomeScreen from '../screens/HomeScreen';
@@ -131,6 +132,7 @@ const RecordsStack = () => {
 const AppNavigator = () => {
   const { theme } = useTheme();
   const { t } = useLanguage();
+  const insets = useSafeAreaInsets();
   
   return (
     <Tab.Navigator
@@ -156,9 +158,9 @@ const AppNavigator = () => {
         tabBarStyle: {
           backgroundColor: theme.background,
           borderTopColor: theme.borderColor,
-          paddingBottom: 8,
+          paddingBottom: Math.max(insets.bottom, 8),
           paddingTop: 8,
-          height: 60,
+          height: 56 + Math.max(insets.bottom, 8),
         },
         headerShown: false,
         tabBarLabelStyle: {

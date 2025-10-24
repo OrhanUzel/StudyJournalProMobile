@@ -5,6 +5,8 @@ import { useTheme } from '../context/ThemeContext';
 import NoteCard from '../components/NoteCard';
 import AddButton from '../components/AddButton';
 import ConfirmDialog from '../components/ConfirmDialog';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 
 /**
  * HomeScreen component displays the list of notes and provides navigation to add new notes
@@ -56,6 +58,9 @@ const HomeScreen = ({ navigation }) => {
     </View>
   );
 
+  const insets = useSafeAreaInsets();
+  const tabBarHeight = useBottomTabBarHeight();
+
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       {/* Header */}
@@ -81,7 +86,10 @@ const HomeScreen = ({ navigation }) => {
         )}
         contentContainerStyle={[
           styles.listContent,
-          { paddingHorizontal: spacing.md },
+          { 
+            paddingHorizontal: spacing.md,
+            paddingBottom: Math.max(80, insets.bottom + tabBarHeight + 24),
+          },
           notes.length === 0 && styles.emptyList,
         ]}
         ListEmptyComponent={renderEmptyState}
@@ -113,7 +121,7 @@ const HomeScreen = ({ navigation }) => {
       />
 
       {/* Add Button */}
-      <AddButton onPress={handleAddNote} />
+      <AddButton onPress={handleAddNote} style={{ bottom: insets.bottom + tabBarHeight + 16 }} />
     </View>
   );
 };
