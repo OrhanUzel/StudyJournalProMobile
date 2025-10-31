@@ -115,6 +115,7 @@ const StopwatchScreen = ({ navigation }) => {
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
+  const [controlsTop, setControlsTop] = useState(0);
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(50)).current;
 
@@ -306,10 +307,8 @@ const StopwatchScreen = ({ navigation }) => {
         await DatabaseService.addLapRecord(lapRecord, dailyRecordId, nextSessionIndex);
       }
 
-      // Günlük notu (varsa) birleştir ve toplamı yeniden hesapla
+      // Toplamı yeniden hesapla; günlük notu değiştirme
       const dailyRecord = await DatabaseService.getDailyRecordWithLaps(dailyRecordId);
-      const mergedNote = dailyRecord.dailyNote ? `${dailyRecord.dailyNote}\n${dailyNote}` : dailyNote;
-      dailyRecord.dailyNote = mergedNote;
       dailyRecord.totalTimeForDay = await DatabaseService.recomputeTotalTimeForDay(dailyRecordId);
       await DatabaseService.updateDailyRecord(dailyRecord);
 
@@ -534,32 +533,23 @@ const StopwatchScreen = ({ navigation }) => {
         style={[
           styles.savePanelContainer, 
           { 
-            backgroundColor: theme.cardBackground,
             opacity: fadeAnim,
             transform: [{ translateY: slideAnim }],
-            display: showSavePanel ? 'flex' : 'none',
-            bottom: keyboardHeight
+            display: showSavePanel ? 'flex' : 'none'
           }
         ]}
       >
-        <View style={styles.savePanelHeader}>
+        <View style={[styles.saveDialog, { backgroundColor: theme.cardBackground, marginTop: Math.max(controlsTop - 16, 0) }]}>
+          <View style={styles.savePanelHeader}>
           <Text style={[styles.savePanelTitle, { color: theme.textColor }]}>
             {t('stopwatch.save_panel_title')}
           </Text>
-          <TouchableOpacity onPress={() => setShowSavePanel(false)}>
+          <TouchableOpacity onPress={handleCancelSave}>
             <Ionicons name="close" size={24} color={theme.textColor} />
           </TouchableOpacity>
         </View>
 
-        <TextInput
-          style={[styles.dailyNoteInput, { color: theme.textColor, borderColor: theme.borderColor }]}
-          placeholder={t('stopwatch.daily_note_ph')}
-          placeholderTextColor={theme.textSecondary}
-          value={dailyNote}
-          onChangeText={setDailyNote}
-          multiline
-          editable={!showSavePanel}
-        />
+
 
         <Text style={[styles.saveConfirmText, { color: theme.textColor }]}>{t('stopwatch.confirm_save')}</Text>
         <View style={styles.saveActions}>
@@ -576,6 +566,7 @@ const StopwatchScreen = ({ navigation }) => {
             <Text style={styles.saveButtonText}>{t('common.no')}</Text>
           </TouchableOpacity>
         </View>
+         </View>
       </Animated.View>
 
       <ConfirmDialog
@@ -656,7 +647,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     //flex: 1, // Responsive genişlik
     paddingHorizontal: 4, // Minimal padding
-    minWidth:42, // Sabit genişlik - label titreşimini önler //72
+    minWidth:85, // Sabit genişlik - label titreşimini önler //72//42 idi en son
   },
   hundredthsSegment: {
     marginLeft: 0,
@@ -668,6 +659,8 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     width: '100%', // Label tam genişliği kaplar
     position: 'relative', // Responsive positioning
+    includeFontPadding: false, // Bu satırı ekleyin
+
   },
   controlsContainer: {
     flexDirection: 'row',
@@ -777,17 +770,13 @@ const styles = StyleSheet.create({
   },
   savePanelContainer: {
     position: 'absolute',
-    bottom: 0,
+    top: 0,
     left: 0,
     right: 0,
+    bottom: 0,
     padding: 16,
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
-    elevation: 5,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -3 },
-    shadowOpacity: 0.3,
-    shadowRadius: 5,
+    justifyContent: 'center',
+    alignItems: 'center',
     zIndex: 20,
   },
   saveBackdrop: {
@@ -797,6 +786,16 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     zIndex: 10,
+  },
+  saveDialog: {
+    width: '100%',
+    borderRadius: 20,
+    padding: 25,
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
   },
   savePanelHeader: {
     flexDirection: 'row',

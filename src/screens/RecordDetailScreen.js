@@ -8,9 +8,12 @@ import {
   ScrollView,
   TextInput,
   TouchableOpacity,
-  Alert
+  Alert,
+  KeyboardAvoidingView,
+  Platform
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import Toast from '../components/Toast';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import DatabaseService from '../services/DatabaseService';
@@ -29,6 +32,8 @@ const RecordDetailScreen = ({ route, navigation }) => {
   const [manualNote, setManualNote] = useState('');
   const [editingLapId, setEditingLapId] = useState(null);
   const [editingLapNote, setEditingLapNote] = useState('');
+  const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
 
   // Kayıt detaylarını yükle
   useEffect(() => {
@@ -79,7 +84,8 @@ const RecordDetailScreen = ({ route, navigation }) => {
       setManualDuration('');
       setManualEndTime('');
       setManualNote('');
-      Alert.alert(t('stopwatch.success'), t('record.manual_add'));
+      setToastMessage(t('stopwatch.saved'));
+      setShowToast(true);
     } catch (error) {
       Alert.alert(t('common.error'), error.message);
     }
@@ -103,8 +109,10 @@ const RecordDetailScreen = ({ route, navigation }) => {
     try {
       const updatedRecord = { ...record, dailyNote };
       await DatabaseService.updateDailyRecord(updatedRecord);
+      await loadRecordDetails();
       setIsEditing(false);
-      Alert.alert(t('stopwatch.success'), t('record.save'));
+      setToastMessage(t('stopwatch.saved'));
+      setShowToast(true);
     } catch (error) {
       Alert.alert(t('common.error'), error.message);
     }
@@ -187,7 +195,8 @@ const RecordDetailScreen = ({ route, navigation }) => {
                       await loadRecordDetails();
                       setEditingLapId(null);
                       setEditingLapNote('');
-                      Alert.alert(t('stopwatch.success'), t('record.save'));
+                      setToastMessage(t('stopwatch.saved'));
+                      setShowToast(true);
                     } catch (error) {
                       Alert.alert(t('common.error'), error.message);
                     }
@@ -241,7 +250,8 @@ const RecordDetailScreen = ({ route, navigation }) => {
   }
 
   return (
-    <ScrollView style={[styles.container, { backgroundColor: theme.background }]}>
+    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0} style={{ flex: 1 }}>
+      <ScrollView style={[styles.container, { backgroundColor: theme.background }]} keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: 24 }}>
       {/* Başlık */}
       <View style={styles.header}>
         <Text style={[styles.headerDate, { color: theme.textColor }]}>
@@ -359,7 +369,13 @@ const RecordDetailScreen = ({ route, navigation }) => {
           </View>
         )}
       </View>
-    </ScrollView>
+      </ScrollView>
+      <Toast
+        visible={showToast}
+        message={toastMessage}
+        onHide={() => setShowToast(false)}
+      />
+    </KeyboardAvoidingView>
   );
 };
 
