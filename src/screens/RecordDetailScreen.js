@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   View, 
   Text, 
@@ -10,9 +10,11 @@ import {
   TouchableOpacity,
   Alert,
   KeyboardAvoidingView,
-  Platform
+  Platform,
+  Modal
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { BlurView } from 'expo-blur';
 import Toast from '../components/Toast';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -21,7 +23,7 @@ import { LapRecord } from '../models/RecordModels';
 
 const RecordDetailScreen = ({ route, navigation }) => {
   const { recordId } = route.params;
-  const { theme } = useTheme();
+  const { theme, isDarkMode } = useTheme();
   const { t, language } = useLanguage();
   const [record, setRecord] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -34,6 +36,23 @@ const RecordDetailScreen = ({ route, navigation }) => {
   const [editingLapNote, setEditingLapNote] = useState('');
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
+  const scrollViewRef = useRef(null);
+  const [editingLapInputY, setEditingLapInputY] = useState(0);
+  const [manualNoteY, setManualNoteY] = useState(0);
+  const [isLapModalVisible, setIsLapModalVisible] = useState(false);
+
+  const scrollToY = (y) => {
+    try {
+      if (scrollViewRef.current && typeof y === 'number') {
+        scrollViewRef.current.scrollTo({ y: Math.max(y - 24, 0), animated: true });
+      }
+    } catch {}
+  };
+
+  useEffect(() => {
+    // ensure editing state resets when record reloads
+    setIsLapModalVisible(false);
+  }, [recordId]);
 
   // Kayıt detaylarını yükle
   useEffect(() => {
@@ -164,7 +183,7 @@ const RecordDetailScreen = ({ route, navigation }) => {
             <Text style={[styles.lapTime, { color: theme.accentColor }]}>
               {item.duration}
             </Text>
-            <TouchableOpacity onPress={() => { setEditingLapId(item.id); setEditingLapNote(item.note || ''); }}>
+            <TouchableOpacity onPress={() => { setEditingLapId(item.id); setEditingLapNote(item.note || ''); setIsLapModalVisible(true); }}>
               <Ionicons name="create-outline" size={18} color={theme.primaryColor} />
             </TouchableOpacity>
           </View>
@@ -177,44 +196,15 @@ const RecordDetailScreen = ({ route, navigation }) => {
             <Text style={[styles.lapDateTime, { color: theme.textSecondary }]}>{t('record.end')}: {formatTime(item.lapDate)}</Text>
           </View>
           {editingLapId === item.id ? (
-            <View style={{ marginTop: 8 }}>
-              <TextInput
-                style={[styles.manualNoteInput, { color: theme.textColor, borderColor: theme.borderColor }]}
-                value={editingLapNote}
-                onChangeText={setEditingLapNote}
-                placeholder={t('stopwatch.lap_note_ph')}
-                placeholderTextColor={theme.textSecondary}
-                multiline
-              />
-              <View style={{ flexDirection: 'row', gap: 8, marginTop: 8 }}>
-                <TouchableOpacity
-                  style={[styles.manualAddButton, { backgroundColor: theme.primaryColor }]}
-                  onPress={async () => {
-                    try {
-                      await DatabaseService.updateLapRecordNote(editingLapId, editingLapNote.trim());
-                      await loadRecordDetails();
-                      setEditingLapId(null);
-                      setEditingLapNote('');
-                      setToastMessage(t('stopwatch.saved'));
-                      setShowToast(true);
-                    } catch (error) {
-                      Alert.alert(t('common.error'), error.message);
-                    }
-                  }}
-                >
-                  <Text style={styles.manualAddButtonText}>{t('record.save')}</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.manualAddButton, { backgroundColor: theme.borderColor }]}
-                  onPress={() => { setEditingLapId(null); setEditingLapNote(''); }}
-                >
-                  <Text style={[styles.manualAddButtonText, { color: theme.textColor }]}>{t('common.cancel')}</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
+            // Inline edit is replaced by modal, keep read-only here
+            item.note ? (
+              <Text style={[styles.lapNote, { color: theme.textColor }]}> 
+                {String(item.note).replace(/\\n/g, '\n')}
+              </Text>
+            ) : null
           ) : (
             item.note ? (
-              <Text style={[styles.lapNote, { color: theme.textColor }]}>
+              <Text style={[styles.lapNote, { color: theme.textColor }]}> 
                 {String(item.note).replace(/\\n/g, '\n')}
               </Text>
             ) : null
@@ -250,8 +240,8 @@ const RecordDetailScreen = ({ route, navigation }) => {
   }
 
   return (
-    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0} style={{ flex: 1 }}>
-      <ScrollView style={[styles.container, { backgroundColor: theme.background }]} keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: 24 }}>
+    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 80} style={{ flex: 1 }}>
+      <ScrollView ref={scrollViewRef} style={[styles.container, { backgroundColor: theme.background }]} keyboardShouldPersistTaps="always" contentContainerStyle={{ paddingBottom: 96 }}>
       {/* Başlık */}
       <View style={styles.header}>
         <Text style={[styles.headerDate, { color: theme.textColor }]}>
@@ -331,7 +321,7 @@ const RecordDetailScreen = ({ route, navigation }) => {
             <Text style={styles.manualAddButtonText}>{t('record.add')}</Text>
           </TouchableOpacity>
         </View>
-        <View style={{ marginTop: 12 }}>
+        <View style={{ marginTop: 12 }} onLayout={(e) => setManualNoteY(e.nativeEvent.layout.y)}>
           <TextInput
             style={[styles.manualNoteInput, { color: theme.textColor, borderColor: theme.borderColor }]}
             placeholder={t('record.optional_note')}
@@ -339,6 +329,7 @@ const RecordDetailScreen = ({ route, navigation }) => {
             value={manualNote}
             onChangeText={setManualNote}
             multiline
+            onFocus={() => scrollToY(manualNoteY)}
           />
         </View>
       </View>
@@ -370,6 +361,115 @@ const RecordDetailScreen = ({ route, navigation }) => {
         )}
       </View>
       </ScrollView>
+      {/* Blur backdrop over the screen when modal is visible */}
+      {isLapModalVisible && (
+        <>
+          <BlurView
+            intensity={40}
+            tint={isDarkMode ? 'dark' : 'light'}
+            style={styles.blurBackdrop}
+          />
+          <View style={[styles.dimOverlay, { backgroundColor: isDarkMode ? 'rgba(0,0,0,0.35)' : 'rgba(0,0,0,0.25)' }]} />
+        </>
+      )}
+  <Modal
+        visible={isLapModalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => { setIsLapModalVisible(false); setEditingLapId(null); setEditingLapNote(''); }}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, theme.shadow?.lg, { backgroundColor: theme.cardBackground, borderColor: theme.borderColor }]}> 
+            {/* Title */}
+            <Text style={[styles.modalTitle, { color: theme.textColor }]}>{t('record.edit_lap_note')}</Text>
+            {/* Session & Lap info */}
+            {(() => {
+              const lap = record?.laps?.find(l => l.id === editingLapId);
+              if (!lap) return null;
+              const groups = groupSessions(record?.laps || []);
+              const group = groups.find(g => g.sessionIndex === (lap.sessionIndex || 1));
+              const lapIndex = group ? (group.items.findIndex(x => x.id === lap.id) + 1) : null;
+              return (
+                <View style={styles.chipsRow}>
+                  <View style={[styles.badge, { borderColor: theme.borderColor, backgroundColor: theme.background }]}>
+                    <Ionicons name="albums-outline" size={14} color={theme.textSecondary} style={{ marginRight: 6 }} />
+                    <Text style={[styles.badgeText, { color: theme.textSecondary }]}>
+                      {t('record.session', { index: lap.sessionIndex || 1 })}
+                    </Text>
+                  </View>
+                  <View style={[styles.badge, { borderColor: theme.borderColor, backgroundColor: theme.background }]}>
+                    <Ionicons name="flag-outline" size={14} color={theme.textSecondary} style={{ marginRight: 6 }} />
+                    <Text style={[styles.badgeText, { color: theme.textSecondary }]}>
+                      {t('record.lap', { index: lapIndex || '?' })}
+                    </Text>
+                  </View>
+                </View>
+              );
+            })()}
+            {/* Lap info summary */}
+            {(() => {
+              const lap = record?.laps?.find(l => l.id === editingLapId);
+              if (!lap) return null;
+              const endDate = new Date(lap.lapDate);
+              const startDate = new Date(endDate.getTime() - hmsToMs(lap.duration));
+              const locale = language === 'en' ? 'en-US' : 'tr-TR';
+              return (
+                <View style={styles.statsRow}>
+                  <View style={[styles.statBox, { borderColor: theme.borderColor, backgroundColor: theme.background }]}> 
+                    <Text style={[styles.statLabel, { color: theme.textSecondary }]}>{t('record.duration')}</Text>
+                    <Text style={[styles.statValue, { color: theme.textColor }]}>{lap.duration}</Text>
+                  </View>
+                  <View style={[styles.statBox, { borderColor: theme.borderColor, backgroundColor: theme.background }]}> 
+                    <Text style={[styles.statLabel, { color: theme.textSecondary }]}>{t('record.start')}</Text>
+                    <Text style={[styles.statValue, { color: theme.textColor }]}>
+                      {startDate.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })}
+                    </Text>
+                  </View>
+                  <View style={[styles.statBox, { borderColor: theme.borderColor, backgroundColor: theme.background }]}> 
+                    <Text style={[styles.statLabel, { color: theme.textSecondary }]}>{t('record.end')}</Text>
+                    <Text style={[styles.statValue, { color: theme.textColor }]}>{formatTime(lap.lapDate)}</Text>
+                  </View>
+                </View>
+              );
+            })()}
+            <TextInput
+              style={[styles.manualNoteInput, { color: theme.textColor, borderColor: theme.borderColor, marginTop: 12 }]}
+              value={editingLapNote}
+              onChangeText={setEditingLapNote}
+              placeholder={t('stopwatch.lap_note_ph')}
+              placeholderTextColor={theme.textSecondary}
+              multiline
+              autoFocus
+            />
+            <View style={{ flexDirection: 'row', gap: 8, marginTop: 16 }}>
+              <TouchableOpacity
+                style={[styles.manualAddButton, { backgroundColor: theme.primaryColor, flex: 1 }]}
+                onPress={async () => {
+                  try {
+                    await DatabaseService.updateLapRecordNote(editingLapId, editingLapNote.trim());
+                    await loadRecordDetails();
+                    setEditingLapId(null);
+                    setEditingLapNote('');
+                    setIsLapModalVisible(false);
+                    setToastMessage(t('stopwatch.saved'));
+                    setShowToast(true);
+                  } catch (error) {
+                    Alert.alert(t('common.error'), error.message);
+                  }
+                }}
+              >
+                <Text style={styles.manualAddButtonText}>{t('record.save')}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.manualAddButton, { backgroundColor: theme.borderColor, flex: 1 }]}
+                onPress={() => { setIsLapModalVisible(false); setEditingLapId(null); setEditingLapNote(''); }}
+              >
+                <Text style={[styles.manualAddButtonText, { color: theme.textColor }]}>{t('common.cancel')}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
       <Toast
         visible={showToast}
         message={toastMessage}
@@ -560,6 +660,76 @@ const styles = StyleSheet.create({
     padding: 12,
     minHeight: 60,
     textAlignVertical: 'top',
+  },
+  // Backdrop overlays for modal
+  blurBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+    position: 'absolute',
+    zIndex: 50,
+  },
+  dimOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    position: 'absolute',
+    zIndex: 49,
+  },
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingBottom: 24,
+  },
+  modalContent: {
+    width: '100%',
+    maxWidth: 520,
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 8,
+    gap: 8,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  // Chips row (Session & Lap)
+  chipsRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 8,
+  },
+  badge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderRadius: 16,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+  },
+  badgeText: {
+    fontSize: 13,
+  },
+  // Stats row (Duration, Start, End)
+  statsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 8,
+    marginTop: 8,
+  },
+  statBox: {
+    flex: 1,
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+  },
+  statLabel: {
+    fontSize: 12,
+  },
+  statValue: {
+    fontSize: 14,
+    marginTop: 2,
+    fontVariant: ['tabular-nums'],
   }
 });
 
