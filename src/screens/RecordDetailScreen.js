@@ -183,8 +183,15 @@ const RecordDetailScreen = ({ route, navigation }) => {
             <Text style={[styles.lapTime, { color: theme.accentColor }]}>
               {item.duration}
             </Text>
-            <TouchableOpacity onPress={() => { setEditingLapId(item.id); setEditingLapNote(item.note || ''); setIsLapModalVisible(true); }}>
-              <Ionicons name="create-outline" size={18} color={theme.primaryColor} />
+            <TouchableOpacity 
+              style={[styles.editButton, { borderColor: theme.borderColor }]} 
+              onPress={() => { setEditingLapId(item.id); setEditingLapNote(item.note || ''); setIsLapModalVisible(true); }}
+              activeOpacity={0.7}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              accessibilityRole="button"
+              accessibilityLabel={t('record.edit_lap_note')}
+            >
+              <Ionicons name="create-outline" size={20} color={theme.primaryColor} />
             </TouchableOpacity>
           </View>
         </View>
@@ -380,8 +387,19 @@ const RecordDetailScreen = ({ route, navigation }) => {
       >
         <View style={styles.modalOverlay}>
           <View style={[styles.modalContent, theme.shadow?.lg, { backgroundColor: theme.cardBackground, borderColor: theme.borderColor }]}> 
-            {/* Title */}
-            <Text style={[styles.modalTitle, { color: theme.textColor }]}>{t('record.edit_lap_note')}</Text>
+            {/* Header with title and close button */}
+            <View style={styles.modalHeaderRow}>
+              <Text style={[styles.modalTitle, { color: theme.textColor }]}>{t('record.edit_lap_note')}</Text>
+              <TouchableOpacity
+                onPress={() => { setIsLapModalVisible(false); setEditingLapId(null); setEditingLapNote(''); }}
+                style={styles.iconButton}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                accessibilityRole="button"
+                accessibilityLabel={t('common.cancel')}
+              >
+                <Ionicons name="close" size={22} color={theme.textSecondary} />
+              </TouchableOpacity>
+            </View>
             {/* Session & Lap info */}
             {(() => {
               const lap = record?.laps?.find(l => l.id === editingLapId);
@@ -602,6 +620,12 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontVariant: ['tabular-nums'],
   },
+  editButton: {
+    paddingVertical: 6,
+    paddingHorizontal: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
   lapDetails: {
     marginTop: 4,
   },
@@ -691,6 +715,17 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 18,
     fontWeight: 'bold',
+  },
+  modalHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  iconButton: {
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 6,
+    borderColor: 'transparent',
   },
   // Chips row (Session & Lap)
   chipsRow: {
