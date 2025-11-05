@@ -45,7 +45,7 @@ class WebDatabaseService {
 
   async getMaxSessionIndex(dailyRecordId) {
     await this.ready;
-    const laps = this.state.lapRecords.filter(l => l.DailyRecordId === dailyRecordId);
+    const laps = this.state.lapRecords.filter(l => l.DailyRecordId === dailyRecordId && (!l.IsManual || l.IsManual === 0));
     if (laps.length === 0) return 0;
     return Math.max(...laps.map(l => Number(l.SessionIndex || 1)));
   }
@@ -73,7 +73,8 @@ class WebDatabaseService {
       TotalTime: lapRecord.totalTime,
       Note: lapRecord.note || '',
       DailyRecordId: dailyRecordId,
-      SessionIndex: sessionIndex
+      SessionIndex: sessionIndex,
+      IsManual: lapRecord.isManual ? 1 : 0
     };
     this.state.lapRecords.push(record);
     this._save();
@@ -95,7 +96,7 @@ class WebDatabaseService {
         if (a.SessionIndex !== b.SessionIndex) return a.SessionIndex - b.SessionIndex;
         return a.LapDate.localeCompare(b.LapDate);
       });
-    return rows.map(row => new LapRecord(row.Id, row.LapDate, row.Duration, row.TotalTime, row.Note, row.SessionIndex));
+    return rows.map(row => new LapRecord(row.Id, row.LapDate, row.Duration, row.TotalTime, row.Note, row.SessionIndex, row.IsManual));
   }
 
   async getDailyRecordWithLaps(dailyRecordId) {

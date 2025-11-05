@@ -44,6 +44,7 @@ const RecordDetailScreen = ({ route, navigation }) => {
   const [editingLapInputY, setEditingLapInputY] = useState(0);
   const [manualNoteY, setManualNoteY] = useState(0);
   const [isLapModalVisible, setIsLapModalVisible] = useState(false);
+  const [isManualModalVisible, setIsManualModalVisible] = useState(false);
 
   const scrollToY = (y) => {
     try {
@@ -69,6 +70,7 @@ const RecordDetailScreen = ({ route, navigation }) => {
     const groups = [];
     let current = null;
     for (const lap of laps) {
+      if (lap.isManual) continue; // manuel seansları grup dışı bırak
       const si = lap.sessionIndex || 1;
       if (!current || current.sessionIndex !== si) {
         current = { sessionIndex: si, items: [] };
@@ -77,6 +79,12 @@ const RecordDetailScreen = ({ route, navigation }) => {
       current.items.push(lap);
     }
     return groups;
+  };
+
+  // Manuel seansları listelemek için yardımcı
+  const getManualLaps = (laps) => {
+    if (!laps || laps.length === 0) return [];
+    return laps.filter(l => l.isManual);
   };
 
   const handleAddManualSession = async () => {
@@ -91,7 +99,7 @@ const RecordDetailScreen = ({ route, navigation }) => {
       return;
     }
     try {
-      const nextSessionIndex = (await DatabaseService.getMaxSessionIndex(record.id)) + 1;
+      const nextSessionIndex = 0; // Manuel seanslar gruplara dahil edilmez
       const [y, m, d] = String(record.day).split('-').map(Number);
       const [hh, mm] = String(manualEndTime).split(':').map(Number);
       const endLocal = new Date(y || 0, (m || 1) - 1, d || 1, hh || 0, mm || 0, 0);
@@ -101,7 +109,8 @@ const RecordDetailScreen = ({ route, navigation }) => {
         finalDuration,
         finalDuration,
         manualNote || '',
-        nextSessionIndex
+        nextSessionIndex,
+        true
       );
       await DatabaseService.addLapRecord(lapRecord, record.id, nextSessionIndex);
       await DatabaseService.recomputeTotalTimeForDay(record.id);
@@ -338,120 +347,27 @@ const RecordDetailScreen = ({ route, navigation }) => {
         )}
       </View>
 
-      {/* Manuel Seans Ekle */}
+      {/* Manuel Seans Ekle (Buton + Modal açılır) */}
       <View style={[styles.manualSection, { backgroundColor: theme.cardBackground }]}>
-        <Text style={[styles.sectionTitle, { color: theme.textColor }]}>{t('record.manual_add')}</Text>
-        <View style={styles.manualRow}>
-          {Platform.OS === 'web' ? (
-            <>
-              <TextInput
-                style={[styles.manualInput, { color: theme.textColor, borderColor: theme.borderColor }]}
-                placeholder={t('record.duration_ph')}
-                placeholderTextColor={theme.textSecondary}
-                value={manualDuration}
-                onChangeText={setManualDuration}
-                keyboardType="numeric"
-              />
-              <TextInput
-                style={[styles.manualInput, { color: theme.textColor, borderColor: theme.borderColor }]}
-                placeholder={t('record.end_ph')}
-                placeholderTextColor={theme.textSecondary}
-                value={manualEndTime}
-                onChangeText={setManualEndTime}
-                keyboardType="numeric"
-                maxLength={5}
-              />
-            </>
-          ) : (
-            <>
-              <TouchableOpacity
-                style={[styles.manualInput, { justifyContent: 'center', borderColor: theme.borderColor }]}
-                onPress={() => setShowStartPicker(true)}
-                activeOpacity={0.7}
-                hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
-                accessibilityRole="button"
-                accessibilityLabel={t('record.start')}
-              >
-                <Text style={{ color: theme.textColor }}>
-                  {manualStartTime ? `${t('record.start')}: ${manualStartTime}` : `${t('record.start')}`}
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.manualInput, { justifyContent: 'center', borderColor: theme.borderColor }]}
-                onPress={() => setShowEndPicker(true)}
-                activeOpacity={0.7}
-                hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
-                accessibilityRole="button"
-                accessibilityLabel={t('record.end')}
-              >
-                <Text style={{ color: theme.textColor }}>
-                  {manualEndTime ? `${t('record.end')}: ${manualEndTime}` : `${t('record.end')}`}
-                </Text>
-              </TouchableOpacity>
-            </>
-          )}
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Text style={[styles.sectionTitle, { color: theme.textColor }]}>{t('record.manual_add')}</Text>
           <TouchableOpacity
             style={[styles.manualAddButton, { backgroundColor: theme.primaryColor }]}
-            onPress={handleAddManualSession}
+            onPress={() => setIsManualModalVisible(true)}
+            accessibilityRole="button"
+            accessibilityLabel={t('record.manual_add')}
           >
             <Text style={styles.manualAddButtonText}>{t('record.add')}</Text>
           </TouchableOpacity>
         </View>
-        {Platform.OS !== 'web' && (
-          <View style={{ marginTop: 8 }}>
-            {showStartPicker && (
-              <DateTimePicker
-                mode="time"
-                value={hmToDateOnRecordDay(manualStartTime) || new Date()}
-                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                onChange={(event, selectedDate) => {
-                  if (Platform.OS !== 'ios') setShowStartPicker(false);
-                  if (event.type === 'set' && selectedDate) {
-                    const hm = formatHM(selectedDate);
-                    setManualStartTime(hm);
-                    const comp = computeDurationHHMMSS(hm, manualEndTime);
-                    if (comp) setManualDuration(comp);
-                  }
-                }}
-              />
-            )}
-            {showEndPicker && (
-              <DateTimePicker
-                mode="time"
-                value={hmToDateOnRecordDay(manualEndTime) || new Date()}
-                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                onChange={(event, selectedDate) => {
-                  if (Platform.OS !== 'ios') setShowEndPicker(false);
-                  if (event.type === 'set' && selectedDate) {
-                    const hm = formatHM(selectedDate);
-                    setManualEndTime(hm);
-                    const comp = computeDurationHHMMSS(manualStartTime, hm);
-                    if (comp) setManualDuration(comp);
-                  }
-                }}
-              />
-            )}
-          </View>
-        )}
-        <View style={{ marginTop: 12 }} onLayout={(e) => setManualNoteY(e.nativeEvent.layout.y)}>
-          <TextInput
-            style={[styles.manualNoteInput, { color: theme.textColor, borderColor: theme.borderColor }]}
-            placeholder={t('record.optional_note')}
-            placeholderTextColor={theme.textSecondary}
-            value={manualNote}
-            onChangeText={setManualNote}
-            multiline
-            onFocus={() => scrollToY(manualNoteY)}
-          />
-        </View>
       </View>
 
-      {/* Turlar Bölümü */}
+      {/* Turlar Bölümü (Normal seanslar) */}
       <View style={styles.lapsSection}>
         <Text style={[styles.sectionTitle, { color: theme.textColor }]}> 
-          {t('record.laps', { count: record.laps.length })}
+          {t('record.laps', { count: (record.laps || []).filter(l => !l.isManual).length })}
         </Text>
-        {record.laps.length > 0 ? (
+        {(record.laps || []).filter(l => !l.isManual).length > 0 ? (
           groupSessions(record.laps).map((group) => (
             <View key={`session-${group.sessionIndex}`} style={styles.sessionSection}>
               <View style={styles.sessionHeader}>
@@ -472,9 +388,28 @@ const RecordDetailScreen = ({ route, navigation }) => {
           </View>
         )}
       </View>
+
+      {/* Manuel Seanslar Bölümü (normal seanslardan sonra) */}
+      <View style={styles.lapsSection}>
+        <Text style={[styles.sectionTitle, { color: theme.textColor }]}> 
+          {t('record.manual_sessions', { count: getManualLaps(record.laps).length })}
+        </Text>
+        {getManualLaps(record.laps).length > 0 ? (
+          <FlatList
+            data={getManualLaps(record.laps)}
+            renderItem={renderLapItem}
+            keyExtractor={(item, idx) => (item.id != null ? `manuallap-${item.id}` : `manuallap-${item.sessionIndex}-${item.lapDate}-${idx}`)}
+            scrollEnabled={false}
+          />
+        ) : (
+          <View style={styles.emptyLapsContainer}>
+            <Text style={[styles.emptyLapsText, { color: theme.textSecondary }]}>{t('record.no_laps')}</Text>
+          </View>
+        )}
+      </View>
       </ScrollView>
-      {/* Blur backdrop over the screen when modal is visible */}
-      {isLapModalVisible && (
+      {/* Blur backdrop over the screen when any modal is visible */}
+      {(isLapModalVisible || isManualModalVisible) && (
         <>
           <BlurView
             intensity={40}
@@ -587,6 +522,168 @@ const RecordDetailScreen = ({ route, navigation }) => {
               <TouchableOpacity
                 style={[styles.manualAddButton, { backgroundColor: theme.borderColor, flex: 1 }]}
                 onPress={() => { setIsLapModalVisible(false); setEditingLapId(null); setEditingLapNote(''); }}
+              >
+                <Text style={[styles.manualAddButtonText, { color: theme.textColor }]}>{t('common.cancel')}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Manual Session Add Modal */}
+      <Modal
+        visible={isManualModalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => { 
+          setIsManualModalVisible(false);
+          setManualDuration('');
+          setManualEndTime('');
+          setManualStartTime('');
+          setManualNote('');
+        }}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, theme.shadow?.lg, { backgroundColor: theme.cardBackground, borderColor: theme.borderColor }]}> 
+            <View style={styles.modalHeaderRow}>
+              <Text style={[styles.modalTitle, { color: theme.textColor }]}>{t('record.manual_add')}</Text>
+              <TouchableOpacity
+                onPress={() => { 
+                  setIsManualModalVisible(false);
+                  setManualDuration('');
+                  setManualEndTime('');
+                  setManualStartTime('');
+                  setManualNote('');
+                }}
+                style={[styles.editButton, { borderColor: theme.borderColor }]}
+                activeOpacity={0.7}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                accessibilityRole="button"
+                accessibilityLabel={t('common.cancel')}
+              >
+                <Ionicons name="close-outline" size={20} color={theme.primaryColor} />
+              </TouchableOpacity>
+            </View>
+
+            {/* Inputs for manual session */}
+            {Platform.OS === 'web' ? (
+              <View style={styles.manualRow}>
+                <TextInput
+                  style={[styles.manualInput, { color: theme.textColor, borderColor: theme.borderColor }]}
+                  placeholder={t('record.duration_ph')}
+                  placeholderTextColor={theme.textSecondary}
+                  value={manualDuration}
+                  onChangeText={setManualDuration}
+                  keyboardType="numeric"
+                />
+                <TextInput
+                  style={[styles.manualInput, { color: theme.textColor, borderColor: theme.borderColor }]}
+                  placeholder={t('record.end_ph')}
+                  placeholderTextColor={theme.textSecondary}
+                  value={manualEndTime}
+                  onChangeText={setManualEndTime}
+                  keyboardType="numeric"
+                  maxLength={5}
+                />
+              </View>
+            ) : (
+              <View style={styles.manualRow}>
+                <TouchableOpacity
+                  style={[styles.manualInput, { justifyContent: 'center', borderColor: theme.borderColor }]}
+                  onPress={() => setShowStartPicker(true)}
+                  activeOpacity={0.7}
+                  hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                  accessibilityRole="button"
+                  accessibilityLabel={t('record.start')}
+                >
+                  <Text style={{ color: theme.textColor }}>
+                    {manualStartTime ? `${t('record.start')}: ${manualStartTime}` : `${t('record.start')}`}
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.manualInput, { justifyContent: 'center', borderColor: theme.borderColor }]}
+                  onPress={() => setShowEndPicker(true)}
+                  activeOpacity={0.7}
+                  hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                  accessibilityRole="button"
+                  accessibilityLabel={t('record.end')}
+                >
+                  <Text style={{ color: theme.textColor }}>
+                    {manualEndTime ? `${t('record.end')}: ${manualEndTime}` : `${t('record.end')}`}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            )}
+
+            {Platform.OS !== 'web' && (
+              <View style={{ marginTop: 8 }}>
+                {showStartPicker && (
+                  <DateTimePicker
+                    mode="time"
+                    value={hmToDateOnRecordDay(manualStartTime) || new Date()}
+                    display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                    themeVariant={isDarkMode ? 'dark' : 'light'}
+                    textColor={Platform.OS === 'ios' ? theme.textColor : undefined}
+                    onChange={(event, selectedDate) => {
+                      if (Platform.OS !== 'ios') setShowStartPicker(false);
+                      if (event.type === 'set' && selectedDate) {
+                        const hm = formatHM(selectedDate);
+                        setManualStartTime(hm);
+                        const comp = computeDurationHHMMSS(hm, manualEndTime);
+                        if (comp) setManualDuration(comp);
+                      }
+                    }}
+                  />
+                )}
+                {showEndPicker && (
+                  <DateTimePicker
+                    mode="time"
+                    value={hmToDateOnRecordDay(manualEndTime) || new Date()}
+                    display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                    themeVariant={isDarkMode ? 'dark' : 'light'}
+                    textColor={Platform.OS === 'ios' ? theme.textColor : undefined}
+                    onChange={(event, selectedDate) => {
+                      if (Platform.OS !== 'ios') setShowEndPicker(false);
+                      if (event.type === 'set' && selectedDate) {
+                        const hm = formatHM(selectedDate);
+                        setManualEndTime(hm);
+                        const comp = computeDurationHHMMSS(manualStartTime, hm);
+                        if (comp) setManualDuration(comp);
+                      }
+                    }}
+                  />
+                )}
+              </View>
+            )}
+
+            <TextInput
+              style={[styles.manualNoteInput, { color: theme.textColor, borderColor: theme.borderColor, marginTop: 12 }]}
+              placeholder={t('record.optional_note')}
+              placeholderTextColor={theme.textSecondary}
+              value={manualNote}
+              onChangeText={setManualNote}
+              multiline
+            />
+
+            <View style={{ flexDirection: 'row', gap: 8, marginTop: 16 }}>
+              <TouchableOpacity
+                style={[styles.manualAddButton, { backgroundColor: theme.primaryColor, flex: 1 }]}
+                onPress={async () => {
+                  await handleAddManualSession();
+                  setIsManualModalVisible(false);
+                }}
+              >
+                <Text style={styles.manualAddButtonText}>{t('record.save')}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.manualAddButton, { backgroundColor: theme.borderColor, flex: 1 }]}
+                onPress={() => { 
+                  setIsManualModalVisible(false);
+                  setManualDuration('');
+                  setManualEndTime('');
+                  setManualStartTime('');
+                  setManualNote('');
+                }}
               >
                 <Text style={[styles.manualAddButtonText, { color: theme.textColor }]}>{t('common.cancel')}</Text>
               </TouchableOpacity>

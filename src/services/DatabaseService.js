@@ -41,6 +41,7 @@ class DatabaseService {
           Note TEXT,
           DailyRecordId INTEGER,
           SessionIndex INTEGER DEFAULT 1,
+          IsManual INTEGER DEFAULT 0,
           FOREIGN KEY (DailyRecordId) REFERENCES DailyRecords(Id) ON DELETE CASCADE
         );
       `);
@@ -53,6 +54,10 @@ class DatabaseService {
       if (!hasSessionIndex) {
         await this.db.execAsync("ALTER TABLE LapRecords ADD COLUMN SessionIndex INTEGER DEFAULT 1;");
       }
+      const hasIsManual = columns.some(c => c.name === 'IsManual');
+      if (!hasIsManual) {
+        await this.db.execAsync("ALTER TABLE LapRecords ADD COLUMN IsManual INTEGER DEFAULT 0;");
+      }
     } catch (e) {
       // ignore alter errors
     }
@@ -63,11 +68,12 @@ class DatabaseService {
    */
   async getOrCreateDailyRecordForDay(day) {
     await this.ready;
-    const existing = await this.db.getFirstAsync('SELECT Id FROM DailyRecords WHERE Day = ?;', [day]);
+    const safeDay = day || `${new Date().getFullYear()}-${String(new Date().getMonth()+1).padStart(2,'0')}-${String(new Date().getDate()).padStart(2,'0')}`;
+    const existing = await this.db.getFirstAsync('SELECT Id FROM DailyRecords WHERE Day = ?;', [safeDay]);
     if (existing && existing.Id) return existing.Id;
     const result = await this.db.runAsync(
       'INSERT INTO DailyRecords (Day, TotalTimeForDay, DailyNote) VALUES (?, ?, ?);',
-      [day, '00:00:00', '']
+      [safeDay, '00:00:00', '']
     );
     return result.lastInsertRowId;
   }
@@ -77,7 +83,8 @@ class DatabaseService {
    */
   async getMaxSessionIndex(dailyRecordId) {
     await this.ready;
-    const row = await this.db.getFirstAsync('SELECT MAX(SessionIndex) as Max FROM LapRecords WHERE DailyRecordId = ?;', [dailyRecordId]);
+    if (dailyRecordId == null) return 0;
+    const row = await this.db.getFirstAsync('SELECT MAX(SessionIndex) as Max FROM LapRecords WHERE DailyRecordId = ? AND (IsManual IS NULL OR IsManual = 0);', [Number(dailyRecordId)]);
     return row && row.Max ? Number(row.Max) : 0;
   }
 
@@ -104,9 +111,16 @@ class DatabaseService {
    */
   async addLapRecord(lapRecord, dailyRecordId, sessionIndex = 1) {
     await this.ready;
+    if (dailyRecordId == null) throw new Error('Günlük kayıt bulunamadı (dailyRecordId).');
+    const safeLapDate = lapRecord?.lapDate || new Date().toISOString();
+    const safeDuration = lapRecord?.duration || '00:00:00';
+    const safeTotal = lapRecord?.totalTime || safeDuration;
+    const safeNote = lapRecord?.note ?? '';
+    const safeSession = Number(sessionIndex) || 1;
+    const safeDailyId = Number(dailyRecordId);
     const result = await this.db.runAsync(
-      'INSERT INTO LapRecords (LapDate, Duration, TotalTime, Note, DailyRecordId, SessionIndex) VALUES (?, ?, ?, ?, ?, ?);',
-      [lapRecord.lapDate, lapRecord.duration, lapRecord.totalTime, lapRecord.note, dailyRecordId, sessionIndex]
+      'INSERT INTO LapRecords (LapDate, Duration, TotalTime, Note, DailyRecordId, SessionIndex, IsManual) VALUES (?, ?, ?, ?, ?, ?, ?);',
+      [safeLapDate, safeDuration, safeTotal, safeNote, safeDailyId, safeSession, lapRecord?.isManual ? 1 : 0]
     );
     return result.lastInsertRowId;
   }
@@ -134,9 +148,10 @@ class DatabaseService {
    */
   async getLapRecordsForDay(dailyRecordId) {
     await this.ready;
+    if (dailyRecordId == null) return [];
     const rows = await this.db.getAllAsync(
       'SELECT * FROM LapRecords WHERE DailyRecordId = ? ORDER BY SessionIndex ASC, LapDate;',
-      [dailyRecordId]
+      [Number(dailyRecordId)]
     );
     return rows.map(row => new LapRecord(
       row.Id,
@@ -144,7 +159,8 @@ class DatabaseService {
       row.Duration,
       row.TotalTime,
       row.Note,
-      row.SessionIndex
+      row.SessionIndex,
+      row.IsManual
     ));
   }
 
@@ -155,9 +171,10 @@ class DatabaseService {
    */
   async getDailyRecordWithLaps(dailyRecordId) {
     await this.ready;
+    if (dailyRecordId == null) throw new Error('Kayıt bulunamadı');
     const row = await this.db.getFirstAsync(
       'SELECT * FROM DailyRecords WHERE Id = ?;',
-      [dailyRecordId]
+      [Number(dailyRecordId)]
     );
     if (!row) {
       throw new Error('Kayıt bulunamadı');
@@ -178,7 +195,8 @@ class DatabaseService {
    */
   async recomputeTotalTimeForDay(dailyRecordId) {
     await this.ready;
-    const rows = await this.db.getAllAsync('SELECT Duration FROM LapRecords WHERE DailyRecordId = ?;', [dailyRecordId]);
+    if (dailyRecordId == null) return '00:00:00';
+    const rows = await this.db.getAllAsync('SELECT Duration FROM LapRecords WHERE DailyRecordId = ?;', [Number(dailyRecordId)]);
     let totalMs = 0;
     for (const r of rows) {
       if (!r.Duration) continue;

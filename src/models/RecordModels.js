@@ -49,13 +49,14 @@ export class DailyRecord {
  * @param {number} sessionIndex - Gün içindeki seans numarası
  */
 export class LapRecord {
-  constructor(id = null, lapDate = new Date().toISOString(), duration = '00:00:00', totalTime = '00:00:00', note = '', sessionIndex = 1) {
+  constructor(id = null, lapDate = new Date().toISOString(), duration = '00:00:00', totalTime = '00:00:00', note = '', sessionIndex = 1, isManual = false) {
     this.id = id;
     this.lapDate = lapDate;
     this.duration = duration;
     this.totalTime = totalTime;
     this.note = note;
     this.sessionIndex = sessionIndex;
+    this.isManual = isManual ? 1 : 0;
   }
 }
 
