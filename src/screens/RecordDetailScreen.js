@@ -40,6 +40,7 @@ const RecordDetailScreen = ({ route, navigation }) => {
   const [editingLapNote, setEditingLapNote] = useState('');
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
+  const [toastVariant, setToastVariant] = useState('info');
   const scrollViewRef = useRef(null);
   const [editingLapInputY, setEditingLapInputY] = useState(0);
   const [manualNoteY, setManualNoteY] = useState(0);
@@ -88,14 +89,29 @@ const RecordDetailScreen = ({ route, navigation }) => {
   };
 
   const handleAddManualSession = async () => {
+    const startValid = /^\d{2}:\d{2}$/.test(String(manualStartTime));
+    const endValid = /^\d{2}:\d{2}$/.test(String(manualEndTime));
     const computed = computeDurationHHMMSS(manualStartTime, manualEndTime);
     const finalDuration = computed || manualDuration;
-    if (!/^\d{2}:\d{2}:\d{2}$/.test(finalDuration)) {
-      Alert.alert(t('common.error'), t('record.duration_ph'));
+
+    // Detailed validations with themed toast messages
+    if (!/^\d{2}:\d{2}:\d{2}$/.test(String(finalDuration))) {
+      setToastMessage(t('record.error.invalid_duration'));
+      setToastVariant('error');
+      setShowToast(true);
       return;
     }
-    if (!/^\d{2}:\d{2}$/.test(manualEndTime)) {
-      Alert.alert(t('common.error'), t('record.end_ph'));
+    if (!endValid) {
+      setToastMessage(t('record.error.invalid_end_time'));
+      setToastVariant('error');
+      setShowToast(true);
+      return;
+    }
+    if (startValid && endValid && !computed) {
+      // On mobile, if both times provided but computed failed, end is before start
+      setToastMessage(t('record.error.end_before_start'));
+      setToastVariant('error');
+      setShowToast(true);
       return;
     }
     try {
@@ -120,9 +136,12 @@ const RecordDetailScreen = ({ route, navigation }) => {
       setManualStartTime('');
       setManualNote('');
       setToastMessage(t('stopwatch.saved'));
+      setToastVariant('success');
       setShowToast(true);
     } catch (error) {
-      Alert.alert(t('common.error'), error.message);
+      setToastMessage(t('stopwatch.save_error', { message: error.message }));
+      setToastVariant('error');
+      setShowToast(true);
     }
   };
 
@@ -212,8 +231,9 @@ const RecordDetailScreen = ({ route, navigation }) => {
     const locale = language === 'en' ? 'en-US' : 'tr-TR';
     return (
       <View style={[
-        styles.lapItem, 
-        { backgroundColor: isEven ? theme.cardBackground : theme.background }
+        styles.lapItem,
+        theme.shadow?.xs,
+        { backgroundColor: theme.cardBackground, borderColor: theme.borderColor }
       ]}>
         <View style={styles.lapHeader}>
           <Text style={[styles.lapNumber, { color: theme.textColor }]}>
@@ -348,28 +368,30 @@ const RecordDetailScreen = ({ route, navigation }) => {
       </View>
 
       {/* Manuel Seans Ekle (Buton + Modal açılır) */}
-      <View style={[styles.manualSection, { backgroundColor: theme.cardBackground }]}>
+      <View style={[styles.manualSection, theme.shadow?.sm, { backgroundColor: theme.cardBackground, borderColor: theme.borderColor, borderWidth: 1 }]}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Text style={[styles.sectionTitle, { color: theme.textColor }]}>{t('record.manual_add')}</Text>
+          <Text style={[styles.sectionTitle, { color: theme.textSecondary, fontSize: 16, fontWeight: '600' }]}>{t('record.manual_add')}</Text>
           <TouchableOpacity
-            style={[styles.manualAddButton, { backgroundColor: theme.primaryColor }]}
+            style={[styles.editButton, { borderColor: theme.borderColor }]}
             onPress={() => setIsManualModalVisible(true)}
+            activeOpacity={0.7}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             accessibilityRole="button"
             accessibilityLabel={t('record.manual_add')}
           >
-            <Text style={styles.manualAddButtonText}>{t('record.add')}</Text>
+            <Ionicons name="create-outline" size={20} color={theme.primaryColor} />
           </TouchableOpacity>
         </View>
       </View>
 
-      {/* Turlar Bölümü (Normal seanslar) */}
+      {/* Seanslar Bölümü (Normal seanslar) */}
       <View style={styles.lapsSection}>
         <Text style={[styles.sectionTitle, { color: theme.textColor }]}> 
-          {t('record.laps', { count: (record.laps || []).filter(l => !l.isManual).length })}
+          {t('record.sessions', { count: groupSessions((record.laps || []).filter(l => !l.isManual)).length })}
         </Text>
         {(record.laps || []).filter(l => !l.isManual).length > 0 ? (
           groupSessions(record.laps).map((group) => (
-            <View key={`session-${group.sessionIndex}`} style={styles.sessionSection}>
+            <View key={`session-${group.sessionIndex}`} style={[styles.sessionSection, theme.shadow?.sm, { backgroundColor: theme.cardBackground, borderColor: theme.borderColor, borderWidth: 1 }] }>
               <View style={styles.sessionHeader}>
                 <Text style={[styles.sectionTitle, { color: theme.textColor }]}>{t('record.session', { index: group.sessionIndex })}</Text>
                 <Text style={[styles.sessionCount, { color: theme.textSecondary }]}>{t('record.laps', { count: group.items.length })}</Text>
@@ -445,21 +467,32 @@ const RecordDetailScreen = ({ route, navigation }) => {
             {(() => {
               const lap = record?.laps?.find(l => l.id === editingLapId);
               if (!lap) return null;
-              const groups = groupSessions(record?.laps || []);
-              const group = groups.find(g => g.sessionIndex === (lap.sessionIndex || 1));
-              const lapIndex = group ? (group.items.findIndex(x => x.id === lap.id) + 1) : null;
+              const isManual = !!lap.isManual;
+              let displaySessionLabel;
+              let displayLapIndex;
+              if (isManual) {
+                const manualList = getManualLaps(record?.laps || []);
+                const idx = manualList.findIndex(x => x.id === lap.id);
+                displayLapIndex = idx >= 0 ? (idx + 1) : '?';
+                displaySessionLabel = t('record.manual_session');
+              } else {
+                const groups = groupSessions(record?.laps || []);
+                const group = groups.find(g => g.sessionIndex === (lap.sessionIndex || 1));
+                displayLapIndex = group ? (group.items.findIndex(x => x.id === lap.id) + 1) : '?';
+                displaySessionLabel = t('record.session', { index: lap.sessionIndex || 1 });
+              }
               return (
                 <View style={styles.chipsRow}>
                   <View style={[styles.badge, { borderColor: theme.borderColor, backgroundColor: theme.background }]}>
                     <Ionicons name="albums-outline" size={14} color={theme.textSecondary} style={{ marginRight: 6 }} />
                     <Text style={[styles.badgeText, { color: theme.textSecondary }]}>
-                      {t('record.session', { index: lap.sessionIndex || 1 })}
+                      {displaySessionLabel}
                     </Text>
                   </View>
                   <View style={[styles.badge, { borderColor: theme.borderColor, backgroundColor: theme.background }]}>
                     <Ionicons name="flag-outline" size={14} color={theme.textSecondary} style={{ marginRight: 6 }} />
                     <Text style={[styles.badgeText, { color: theme.textSecondary }]}>
-                      {t('record.lap', { index: lapIndex || '?' })}
+                      {t('record.lap', { index: displayLapIndex })}
                     </Text>
                   </View>
                 </View>
@@ -694,6 +727,7 @@ const RecordDetailScreen = ({ route, navigation }) => {
       <Toast
         visible={showToast}
         message={toastMessage}
+        variant={toastVariant}
         onHide={() => setShowToast(false)}
       />
     </KeyboardAvoidingView>
@@ -796,6 +830,8 @@ const styles = StyleSheet.create({
   },
   sessionSection: {
     marginTop: 12,
+    padding: 12,
+    borderRadius: 12,
   },
   sessionHeader: {
     flexDirection: 'row',
@@ -810,6 +846,7 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 8,
     marginBottom: 8,
+    borderWidth: 1,
   },
   lapHeader: {
     flexDirection: 'row',
@@ -860,6 +897,7 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 8,
     marginBottom: 20,
+    borderWidth: 1,
   },
   manualRow: {
     flexDirection: 'row',

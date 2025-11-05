@@ -9,8 +9,9 @@ import { useTheme } from '../context/ThemeContext';
  * - message: string
  * - duration?: number (ms)
  * - onHide?: function
- */
-const Toast = ({ visible, message, duration = 2000, onHide }) => {
+ * - variant?: 'info' | 'success' | 'error'
+*/
+const Toast = ({ visible, message, duration = 2000, onHide, variant = 'info' }) => {
   const { theme, shadow } = useTheme();
   const opacity = useRef(new Animated.Value(0)).current;
   const translateY = useRef(new Animated.Value(-10)).current;
@@ -57,7 +58,7 @@ const Toast = ({ visible, message, duration = 2000, onHide }) => {
           shadow?.md,
           {
             backgroundColor: theme.cardBackground,
-            borderColor: theme.borderColor,
+            borderColor: variant === 'error' ? theme.dangerColor : (variant === 'success' ? theme.successColor : theme.borderColor),
             opacity,
             transform: [{ translateY }],
           },
