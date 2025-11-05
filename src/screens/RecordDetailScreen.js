@@ -14,6 +14,7 @@ import {
   Modal
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { BlurView } from 'expo-blur';
 import Toast from '../components/Toast';
 import { useTheme } from '../context/ThemeContext';
@@ -31,6 +32,9 @@ const RecordDetailScreen = ({ route, navigation }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [manualDuration, setManualDuration] = useState('');
   const [manualEndTime, setManualEndTime] = useState('');
+  const [manualStartTime, setManualStartTime] = useState('');
+  const [showStartPicker, setShowStartPicker] = useState(false);
+  const [showEndPicker, setShowEndPicker] = useState(false);
   const [manualNote, setManualNote] = useState('');
   const [editingLapId, setEditingLapId] = useState(null);
   const [editingLapNote, setEditingLapNote] = useState('');
@@ -76,7 +80,9 @@ const RecordDetailScreen = ({ route, navigation }) => {
   };
 
   const handleAddManualSession = async () => {
-    if (!/^\d{2}:\d{2}:\d{2}$/.test(manualDuration)) {
+    const computed = computeDurationHHMMSS(manualStartTime, manualEndTime);
+    const finalDuration = computed || manualDuration;
+    if (!/^\d{2}:\d{2}:\d{2}$/.test(finalDuration)) {
       Alert.alert(t('common.error'), t('record.duration_ph'));
       return;
     }
@@ -92,8 +98,8 @@ const RecordDetailScreen = ({ route, navigation }) => {
       const lapRecord = new LapRecord(
         null,
         endLocal.toISOString(),
-        manualDuration,
-        manualDuration,
+        finalDuration,
+        finalDuration,
         manualNote || '',
         nextSessionIndex
       );
@@ -102,6 +108,7 @@ const RecordDetailScreen = ({ route, navigation }) => {
       await loadRecordDetails();
       setManualDuration('');
       setManualEndTime('');
+      setManualStartTime('');
       setManualNote('');
       setToastMessage(t('stopwatch.saved'));
       setShowToast(true);
@@ -162,6 +169,30 @@ const RecordDetailScreen = ({ route, navigation }) => {
     if (!hms || typeof hms !== 'string') return 0;
     const [h, m, s] = hms.split(':').map(Number);
     return ((h || 0) * 3600 + (m || 0) * 60 + (s || 0)) * 1000;
+  };
+
+  const pad2 = (n) => String(n).padStart(2, '0');
+  const formatHM = (date) => `${pad2(date.getHours())}:${pad2(date.getMinutes())}`;
+  const hmToDateOnRecordDay = (hm) => {
+    const [y, m, d] = String(record?.day || '').split('-').map(Number);
+    const base = new Date(y || 1970, (m || 1) - 1, d || 1);
+    if (!hm || !/^\d{2}:\d{2}$/.test(hm)) return base;
+    const [hh, mm] = hm.split(':').map(Number);
+    const dt = new Date(base);
+    dt.setHours(hh || 0, mm || 0, 0, 0);
+    return dt;
+  };
+  const computeDurationHHMMSS = (startHM, endHM) => {
+    if (!/^\d{2}:\d{2}$/.test(String(startHM)) || !/^\d{2}:\d{2}$/.test(String(endHM))) return null;
+    const start = hmToDateOnRecordDay(startHM);
+    const end = hmToDateOnRecordDay(endHM);
+    const diffMs = end.getTime() - start.getTime();
+    if (diffMs <= 0) return null;
+    const totalSec = Math.floor(diffMs / 1000);
+    const h = Math.floor(totalSec / 3600);
+    const m2 = Math.floor((totalSec % 3600) / 60);
+    const s = totalSec % 60;
+    return `${pad2(h)}:${pad2(m2)}:${pad2(s)}`;
   };
 
   // Tur öğesi render fonksiyonu
@@ -268,10 +299,17 @@ const RecordDetailScreen = ({ route, navigation }) => {
           <Text style={[styles.sectionTitle, { color: theme.textColor }]}> 
             {t('record.daily_note')}
           </Text>
-          <TouchableOpacity onPress={() => setIsEditing(!isEditing)}>
+          <TouchableOpacity 
+            onPress={() => setIsEditing(!isEditing)}
+            style={[styles.editButton, { borderColor: theme.borderColor }]}
+            activeOpacity={0.7}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            accessibilityRole="button"
+            accessibilityLabel={isEditing ? t('common.cancel') : t('record.edit_lap_note')}
+          >
             <Ionicons 
               name={isEditing ? "close-outline" : "create-outline"} 
-              size={22} 
+              size={20} 
               color={theme.primaryColor} 
             />
           </TouchableOpacity>
@@ -304,23 +342,54 @@ const RecordDetailScreen = ({ route, navigation }) => {
       <View style={[styles.manualSection, { backgroundColor: theme.cardBackground }]}>
         <Text style={[styles.sectionTitle, { color: theme.textColor }]}>{t('record.manual_add')}</Text>
         <View style={styles.manualRow}>
-          <TextInput
-            style={[styles.manualInput, { color: theme.textColor, borderColor: theme.borderColor }]}
-            placeholder={t('record.duration_ph')}
-            placeholderTextColor={theme.textSecondary}
-            value={manualDuration}
-            onChangeText={setManualDuration}
-            keyboardType="numeric"
-          />
-          <TextInput
-            style={[styles.manualInput, { color: theme.textColor, borderColor: theme.borderColor }]}
-            placeholder={t('record.end_ph')}
-            placeholderTextColor={theme.textSecondary}
-            value={manualEndTime}
-            onChangeText={setManualEndTime}
-            keyboardType="numeric"
-            maxLength={5}
-          />
+          {Platform.OS === 'web' ? (
+            <>
+              <TextInput
+                style={[styles.manualInput, { color: theme.textColor, borderColor: theme.borderColor }]}
+                placeholder={t('record.duration_ph')}
+                placeholderTextColor={theme.textSecondary}
+                value={manualDuration}
+                onChangeText={setManualDuration}
+                keyboardType="numeric"
+              />
+              <TextInput
+                style={[styles.manualInput, { color: theme.textColor, borderColor: theme.borderColor }]}
+                placeholder={t('record.end_ph')}
+                placeholderTextColor={theme.textSecondary}
+                value={manualEndTime}
+                onChangeText={setManualEndTime}
+                keyboardType="numeric"
+                maxLength={5}
+              />
+            </>
+          ) : (
+            <>
+              <TouchableOpacity
+                style={[styles.manualInput, { justifyContent: 'center', borderColor: theme.borderColor }]}
+                onPress={() => setShowStartPicker(true)}
+                activeOpacity={0.7}
+                hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                accessibilityRole="button"
+                accessibilityLabel={t('record.start')}
+              >
+                <Text style={{ color: theme.textColor }}>
+                  {manualStartTime ? `${t('record.start')}: ${manualStartTime}` : `${t('record.start')}`}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.manualInput, { justifyContent: 'center', borderColor: theme.borderColor }]}
+                onPress={() => setShowEndPicker(true)}
+                activeOpacity={0.7}
+                hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                accessibilityRole="button"
+                accessibilityLabel={t('record.end')}
+              >
+                <Text style={{ color: theme.textColor }}>
+                  {manualEndTime ? `${t('record.end')}: ${manualEndTime}` : `${t('record.end')}`}
+                </Text>
+              </TouchableOpacity>
+            </>
+          )}
           <TouchableOpacity
             style={[styles.manualAddButton, { backgroundColor: theme.primaryColor }]}
             onPress={handleAddManualSession}
@@ -328,6 +397,42 @@ const RecordDetailScreen = ({ route, navigation }) => {
             <Text style={styles.manualAddButtonText}>{t('record.add')}</Text>
           </TouchableOpacity>
         </View>
+        {Platform.OS !== 'web' && (
+          <View style={{ marginTop: 8 }}>
+            {showStartPicker && (
+              <DateTimePicker
+                mode="time"
+                value={hmToDateOnRecordDay(manualStartTime) || new Date()}
+                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                onChange={(event, selectedDate) => {
+                  if (Platform.OS !== 'ios') setShowStartPicker(false);
+                  if (event.type === 'set' && selectedDate) {
+                    const hm = formatHM(selectedDate);
+                    setManualStartTime(hm);
+                    const comp = computeDurationHHMMSS(hm, manualEndTime);
+                    if (comp) setManualDuration(comp);
+                  }
+                }}
+              />
+            )}
+            {showEndPicker && (
+              <DateTimePicker
+                mode="time"
+                value={hmToDateOnRecordDay(manualEndTime) || new Date()}
+                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                onChange={(event, selectedDate) => {
+                  if (Platform.OS !== 'ios') setShowEndPicker(false);
+                  if (event.type === 'set' && selectedDate) {
+                    const hm = formatHM(selectedDate);
+                    setManualEndTime(hm);
+                    const comp = computeDurationHHMMSS(manualStartTime, hm);
+                    if (comp) setManualDuration(comp);
+                  }
+                }}
+              />
+            )}
+          </View>
+        )}
         <View style={{ marginTop: 12 }} onLayout={(e) => setManualNoteY(e.nativeEvent.layout.y)}>
           <TextInput
             style={[styles.manualNoteInput, { color: theme.textColor, borderColor: theme.borderColor }]}
@@ -392,12 +497,13 @@ const RecordDetailScreen = ({ route, navigation }) => {
               <Text style={[styles.modalTitle, { color: theme.textColor }]}>{t('record.edit_lap_note')}</Text>
               <TouchableOpacity
                 onPress={() => { setIsLapModalVisible(false); setEditingLapId(null); setEditingLapNote(''); }}
-                style={styles.iconButton}
+                style={[styles.editButton, { borderColor: theme.borderColor }]}
+                activeOpacity={0.7}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                 accessibilityRole="button"
                 accessibilityLabel={t('common.cancel')}
               >
-                <Ionicons name="close" size={22} color={theme.textSecondary} />
+                <Ionicons name="close-outline" size={20} color={theme.primaryColor} />
               </TouchableOpacity>
             </View>
             {/* Session & Lap info */}
