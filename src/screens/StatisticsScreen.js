@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Pressable } from 'react-native';
 import { useNotes } from '../context/NotesContext';
 import { useTheme } from '../context/ThemeContext';
 import ChartCard from '../components/ChartCard';
@@ -14,10 +14,21 @@ import { useLanguage } from '../context/LanguageContext';
 const StatisticsScreen = () => {
   const { getStudyStats } = useNotes();
   const { theme, spacing, borderRadius } = useTheme();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [activePeriod, setActivePeriod] = useState('week');
   const [stats, setStats] = useState([]);
   const isFocused = useIsFocused();
+  const [showPeriodMenu, setShowPeriodMenu] = useState(false);
+  const periodOptions = React.useMemo(() => ([
+    { key: 'week', label: t('period.week') },
+    { key: 'last_1w', label: t('period.last_1w') },
+    { key: 'month', label: t('period.month') },
+    { key: 'last_1m', label: t('period.last_1m') },
+    { key: 'last_3m', label: t('period.last_3m') },
+    { key: 'last_6m', label: t('period.last_6m') },
+    { key: 'year', label: t('period.year') },
+    { key: 'last_1y', label: t('period.last_1y') },
+  ]), [language]);
  
   useEffect(() => {
     const now = new Date();
@@ -32,9 +43,32 @@ const StatisticsScreen = () => {
       startDate = s;
     } else if (activePeriod === 'month') {
       startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+    } else if (activePeriod === 'year') {
+      startDate = new Date(now.getFullYear(), 0, 1);
+    } else if (activePeriod === 'last_1m') {
+      const s = new Date(now);
+      s.setDate(now.getDate() - 30);
+      s.setHours(0, 0, 0, 0);
+      startDate = s;
+    } else if (activePeriod === 'last_3m') {
+      const s = new Date(now);
+      s.setMonth(now.getMonth() - 3);
+      s.setHours(0, 0, 0, 0);
+      startDate = s;
+    } else if (activePeriod === 'last_6m') {
+      const s = new Date(now);
+      s.setMonth(now.getMonth() - 6);
+      s.setHours(0, 0, 0, 0);
+      startDate = s;
+    } else if (activePeriod === 'last_1y') {
+      const s = new Date(now);
+      s.setFullYear(now.getFullYear() - 1);
+      s.setHours(0, 0, 0, 0);
+      startDate = s;
     } else {
       const s = new Date(now);
       s.setDate(now.getDate() - 7);
+      s.setHours(0, 0, 0, 0);
       startDate = s;
     }
 
@@ -68,10 +102,11 @@ const StatisticsScreen = () => {
   }, [activePeriod, isFocused]);
 
   const totalStudyTime = stats.reduce((total, session) => total + (session.duration || 0), 0);
-  const formatMinutes = (mins) => {
-    const h = Math.floor(mins / 60);
-    const m = mins % 60;
-    return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+  // Toplam ve ortalama süreyi saat+dakika olarak göster
+  const formatHours = (mins) => {
+    const h = Math.floor((mins || 0) / 60);
+    const m = Math.floor((mins || 0) % 60);
+    return `${h} ${t('stopwatch.hours_abbr')} ${m} ${t('stopwatch.minutes_abbr')}`;
   };
   
   const calculateAverage = () => {
@@ -84,10 +119,42 @@ const StatisticsScreen = () => {
       const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
       return Math.round(totalStudyTime / daysInMonth);
     }
+    if (activePeriod === 'year') {
+      const now = new Date();
+      const year = now.getFullYear();
+      const isLeap = new Date(year, 1, 29).getMonth() === 1;
+      const daysInYear = isLeap ? 366 : 365;
+      return Math.round(totalStudyTime / daysInYear);
+    }
+    if (activePeriod === 'last_1m') return Math.round(totalStudyTime / 30);
+    if (activePeriod === 'last_3m') return Math.round(totalStudyTime / 90);
+    if (activePeriod === 'last_6m') return Math.round(totalStudyTime / 180);
+    if (activePeriod === 'last_1y') return Math.round(totalStudyTime / 365);
     return Math.round(totalStudyTime / 7);
   };
 
   const averageStudyTime = calculateAverage();
+  const today = new Date();
+  const locale = language === 'en' ? 'en-US' : 'tr-TR';
+  const todayString = today.toLocaleDateString(locale, { day: '2-digit', month: 'long', year: 'numeric' });
+
+  const getEmptyMessage = (period) => {
+    const now = new Date();
+    const locale = language === 'en' ? 'en-US' : 'tr-TR';
+    if (period === 'week') return t('empty.period.week');
+    if (period === 'last_1w') return t('empty.period.last_1w');
+    if (period === 'month') {
+      const monthName = now.toLocaleDateString(locale, { month: 'long' });
+      const year = now.getFullYear();
+      return t('empty.period.month', { month: monthName.charAt(0).toUpperCase() + monthName.slice(1), year });
+    }
+    if (period === 'last_1m') return t('empty.period.last_1m');
+    if (period === 'last_3m') return t('empty.period.last_3m');
+    if (period === 'last_6m') return t('empty.period.last_6m');
+    if (period === 'year') return t('empty.period.year');
+    if (period === 'last_1y') return t('empty.period.last_1y');
+    return t('empty.stats');
+  };
 
   const getMostStudiedSubject = () => {
     if (stats.length === 0) return 'N/A';
@@ -119,76 +186,84 @@ const StatisticsScreen = () => {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.periodSelector}>
-          <TouchableOpacity
-            style={[
-              styles.periodButton,
-              activePeriod === 'week' && [styles.activePeriod, { backgroundColor: theme.primary }],
-              { borderColor: theme.border, borderRadius: borderRadius.md }
-            ]}
-            onPress={() => setActivePeriod('week')}
+        <View style={[styles.comboBoxContainer, showPeriodMenu && { zIndex: 1000 }]}>
+          <Pressable
+            style={[styles.comboBox, { borderColor: theme.border, backgroundColor: theme.card }]}
+            onPress={() => setShowPeriodMenu((v) => !v)}
+            android_ripple={undefined}
+            hitSlop={8}
           >
-            <Text
-              style={[styles.periodButtonText, { color: activePeriod === 'week' ? '#FFFFFF' : theme.text }]}
-            >
-              {t('period.week')}
+            <Text style={[styles.comboLabel, { color: theme.text }]}> 
+              {periodOptions.find((p) => p.key === activePeriod)?.label || t('period.week')}
             </Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity
-            style={[
-              styles.periodButton,
-              activePeriod === 'month' && [styles.activePeriod, { backgroundColor: theme.primary }],
-              { borderColor: theme.border, borderRadius: borderRadius.md }
-            ]}
-            onPress={() => setActivePeriod('month')}
-          >
-            <Text
-              style={[styles.periodButtonText, { color: activePeriod === 'month' ? '#FFFFFF' : theme.text }]}
-            >
-              {t('period.month')}
-            </Text>
-          </TouchableOpacity>
-        </View>
-        
-        <ChartCard
-          data={stats}
-          title={activePeriod === 'week' ? t('chart.title_week') : t('chart.title_month')}
-          period={activePeriod}
-        />
-        <View
-          style={[
-            styles.summaryCard,
-            { backgroundColor: theme.card, borderColor: theme.border, borderRadius: borderRadius.lg }
-          ]}
-        >
-          <Text style={[styles.summaryTitle, { color: theme.text }]}>{t('summary.title')}</Text>
-          <View style={[styles.statRow, { flexWrap: 'wrap' }]}>
-            <View style={styles.statItem}>
-              <Ionicons name="time-outline" size={24} color={theme.primary} />
-              <Text style={[styles.statValue, { color: theme.text }]}>{formatMinutes(totalStudyTime)}</Text>
-              <Text style={[styles.statLabel, { color: theme.textSecondary }]}>{t('summary.total')}</Text>
-            </View>
-            <View style={styles.statItem}>
-              <Ionicons name="calendar-outline" size={24} color={theme.primary} />
-              <Text style={[styles.statValue, { color: theme.text }]}>{formatMinutes(averageStudyTime)}</Text>
-              <Text style={[styles.statLabel, { color: theme.textSecondary }]}>{t('summary.daily_avg')}</Text>
-            </View>
-            
-            {/* En çok çalışılan konu bölümü kaldırıldı */}
-            {false && (
-              <View style={styles.statItem}>
-                <Ionicons name="book-outline" size={24} color={theme.primary} />
-                <Text style={[styles.statValue, { color: theme.text }]} numberOfLines={1}>{/* getMostStudiedSubject() */}</Text>
-                <Text style={[styles.statLabel, { color: theme.textSecondary }]}>{t('summary.most_subject')}</Text>
+            <Ionicons name={showPeriodMenu ? 'chevron-up' : 'chevron-down'} size={18} color={theme.textSecondary} />
+          </Pressable>
+          {showPeriodMenu && (
+            <>
+              <TouchableOpacity style={[styles.overlay]} onPress={() => setShowPeriodMenu(false)} />
+              <View style={[styles.dropdown, { backgroundColor: theme.card, borderColor: theme.border }]}> 
+                {periodOptions.map((opt) => (
+                  <Pressable
+                    key={opt.key}
+                    style={[
+                      styles.dropdownItem,
+                      activePeriod === opt.key && styles.dropdownItemActive,
+                      activePeriod === opt.key && { backgroundColor: theme.primary },
+                    ]}
+                    onPress={() => { setActivePeriod(opt.key); setShowPeriodMenu(false); }}
+                  >
+                    <Text style={{ color: activePeriod === opt.key ? '#fff' : theme.text }}>{opt.label}</Text>
+                  </Pressable>
+                ))}
               </View>
-            )}
-          </View>
+            </>
+          )}
         </View>
-        {stats.length === 0 && (
+        <View style={[styles.todayRow, { borderColor: theme.border }]}> 
+          <Ionicons name="calendar-outline" size={14} color={theme.textSecondary} />
+          <Text style={[styles.todayText, { color: theme.textSecondary }]}> {(language === 'en' ? 'Today' : 'Bugün')}: {todayString}</Text>
+        </View>
+        {stats.length > 0 ? (
+          <>
+            <ChartCard
+              data={stats}
+              title={
+                activePeriod === 'week' ? t('chart.title_week') :
+                activePeriod === 'last_1w' ? t('chart.title_last_1w') :
+                activePeriod === 'month' ? t('chart.title_month') :
+                activePeriod === 'year' ? t('chart.title_year') :
+                activePeriod === 'last_1m' ? t('chart.title_last_1m') :
+                activePeriod === 'last_3m' ? t('chart.title_last_3m') :
+                activePeriod === 'last_6m' ? t('chart.title_last_6m') :
+                t('chart.title_last_1y')
+              }
+              period={activePeriod}
+            />
+            <View
+              style={[
+                styles.summaryCard,
+                { backgroundColor: theme.card, borderColor: theme.border, borderRadius: borderRadius.lg }
+              ]}
+            >
+              <Text style={[styles.summaryTitle, { color: theme.text }]}>{t('summary.title')}</Text>
+              <View style={[styles.statRow, { flexWrap: 'wrap' }]}>
+                <View style={styles.statItem}>
+                  <Ionicons name="time-outline" size={24} color={theme.primary} />
+                  <Text style={[styles.statValue, { color: theme.text }]}>{formatHours(totalStudyTime)}</Text>
+                  <Text style={[styles.statLabel, { color: theme.textSecondary }]}>{t('summary.total')}</Text>
+                </View>
+                <View style={styles.statItem}>
+                  <Ionicons name="calendar-outline" size={24} color={theme.primary} />
+                  <Text style={[styles.statValue, { color: theme.text }]}>{formatHours(averageStudyTime)}</Text>
+                  <Text style={[styles.statLabel, { color: theme.textSecondary }]}>{t('summary.daily_avg')}</Text>
+                </View>
+              </View>
+            </View>
+          </>
+        ) : (
           <View style={styles.emptyContainer}>
             <Ionicons name="analytics-outline" size={64} color={theme.textSecondary} />
-            <Text style={[styles.emptyText, { color: theme.text }]}>{t('empty.stats')}</Text>
+            <Text style={[styles.emptyText, { color: theme.text }]}>{getEmptyMessage(activePeriod)}</Text>
             <Text style={[styles.emptySubtext, { color: theme.textSecondary }]}>{t('empty.stats.subtext')}</Text>
           </View>
         )}
@@ -221,21 +296,76 @@ const styles = StyleSheet.create({
   },
   periodSelector: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     marginBottom: 16,
   },
   periodButton: {
-    flex: 1,
-    height: 40,
+    paddingHorizontal: 12,
+    height: 36,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
+    borderRadius: 12,
     marginHorizontal: 4,
+    marginVertical: 4,
+    minWidth: 96,
   },
   activePeriod: {
     borderWidth: 0,
   },
   periodButtonText: {
     fontWeight: '600',
+    fontSize: 13,
+  },
+  comboBoxContainer: {
+    marginBottom: 16,
+    position: 'relative',
+    overflow: 'visible',
+  },
+  comboBox: {
+    height: 40,
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  comboLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  dropdown: {
+    position: 'absolute',
+    top: 48,
+    left: 0,
+    right: 0,
+    borderWidth: 1,
+    borderRadius: 12,
+    overflow: 'hidden',
+    zIndex: 1001,
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+  },
+  dropdownItem: {
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+  },
+  dropdownItemActive: {
+    borderRadius: 12,
+    marginHorizontal: 0,
+    marginVertical: 0,
+  },
+  overlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 999,
   },
   summaryCard: {
     padding: 16,
@@ -279,6 +409,18 @@ const styles = StyleSheet.create({
   emptySubtext: {
     fontSize: 14,
     textAlign: 'center',
+  },
+  todayRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 8,
+    borderTopWidth: 1,
+    marginBottom: 8,
+  },
+  todayText: {
+    fontSize: 12,
+    fontWeight: '600',
   },
 });
 

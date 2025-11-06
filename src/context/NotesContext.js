@@ -132,9 +132,31 @@ export const NotesProvider = ({ children }) => {
       startDate.setHours(0, 0, 0, 0);
     } else if (period === 'month') {
       startDate = new Date(now.getFullYear(), now.getMonth(), 1);
-    } else {
+    } else if (period === 'last_1w') {
       startDate = new Date(now);
       startDate.setDate(now.getDate() - 7);
+      startDate.setHours(0, 0, 0, 0);
+    } else if (period === 'last_1m') {
+      startDate = new Date(now);
+      startDate.setDate(now.getDate() - 30);
+      startDate.setHours(0, 0, 0, 0);
+    } else if (period === 'last_3m') {
+      startDate = new Date(now);
+      startDate.setMonth(now.getMonth() - 3);
+      startDate.setHours(0, 0, 0, 0);
+    } else if (period === 'last_6m') {
+      startDate = new Date(now);
+      startDate.setMonth(now.getMonth() - 6);
+      startDate.setHours(0, 0, 0, 0);
+    } else if (period === 'last_1y') {
+      startDate = new Date(now);
+      startDate.setFullYear(now.getFullYear() - 1);
+      startDate.setHours(0, 0, 0, 0);
+    } else {
+      // default to last week
+      startDate = new Date(now);
+      startDate.setDate(now.getDate() - 7);
+      startDate.setHours(0, 0, 0, 0);
     }
     
     const filteredSessions = studySessions.filter(
