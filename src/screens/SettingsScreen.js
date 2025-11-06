@@ -5,6 +5,7 @@ import { useNotes } from '../context/NotesContext';
 import { Ionicons } from '@expo/vector-icons';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { useLanguage } from '../context/LanguageContext';
+import OnboardingScreen from './OnboardingScreen';
 
 const SettingsScreen = () => {
   const { theme, isDarkMode, toggleTheme, spacing, borderRadius } = useTheme();
@@ -12,6 +13,7 @@ const SettingsScreen = () => {
   const { t, language, setLanguage } = useLanguage();
   const [showClearConfirm, setShowClearConfirm] = React.useState(false);
   const [showIconsModal, setShowIconsModal] = React.useState(false);
+  const [onboardingVisible, setOnboardingVisible] = React.useState(false);
   
   const handleClearNotes = () => {
     setShowClearConfirm(true);
@@ -92,6 +94,23 @@ const SettingsScreen = () => {
                 thumbColor="#f4f3f4"
               />
             </View>
+            <TouchableOpacity 
+              style={styles.settingRow}
+              onPress={() => setOnboardingVisible(true)}
+            >
+              <View style={styles.settingInfo}>
+                <Ionicons 
+                  name="information-circle-outline" 
+                  size={22} 
+                  color={theme.primary} 
+                  style={styles.settingIcon}
+                />
+                <Text style={[styles.settingText, { color: theme.text }]}>
+                  {t('settings.onboarding_show_now')}
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color={theme.textSecondary} />
+            </TouchableOpacity>
           </View>
         </View>
 
@@ -254,6 +273,18 @@ const SettingsScreen = () => {
               <Text style={styles.modalCloseText}>{t('common.close')}</Text>
             </TouchableOpacity>
           </View>
+        </View>
+      </Modal>
+
+      {/* Onboarding Fullscreen Modal */}
+      <Modal 
+        visible={onboardingVisible} 
+        animationType="slide" 
+        presentationStyle="fullScreen" 
+        onRequestClose={() => setOnboardingVisible(false)}
+      >
+        <View style={{ flex: 1, backgroundColor: theme.background }}>
+          <OnboardingScreen onDone={() => setOnboardingVisible(false)} />
         </View>
       </Modal>
 

@@ -45,6 +45,33 @@ const tr = {
   'settings.icons_refs_link': 'Uygulamada kullanılan ikon ve referanslar',
   'settings.icons_refs_title': 'Uygulamada Kullanılan İkonlar ve Referanslar',
   'common.close': 'Kapat',
+  // Onboarding
+  'onboarding.title1': 'Kronometre ile çalışmanı başlat',
+  'onboarding.body1': 'Zamanlayıcıyı başlat/durdur ve turlarla seanslarını kaydet.',
+  'onboarding.title2': 'Çalışma Günlüğüne not ekle',
+  'onboarding.body2': 'Seanslarına kısa notlar ekleyerek ilerlemeni takip et.',
+  'onboarding.title3': 'İstatistikleri görüntüle',
+  'onboarding.body3': 'Haftalık/aylık özet ve ortalamalarla performansını analiz et.',
+  'onboarding.title4': 'Ayarları özelleştir',
+  'onboarding.body4': 'Karanlık mod ve dil seçenekleriyle deneyimini kişiselleştir.',
+  // Tips bullets
+  'onboarding.tips1_1': 'Başlat/Durdur ile seansını yönet',
+  'onboarding.tips1_2': 'Tur ekleyerek alt süreleri kaydet',
+  'onboarding.tips2_1': 'Her tura kısa not ekleyebilirsin',
+  'onboarding.tips2_2': 'Notları daha sonra düzenle/sil',
+  'onboarding.tips3_1': 'Haftalık/aylık grafikleri incele',
+  'onboarding.tips3_2': 'Toplam ve ortalamaları takip et',
+  'onboarding.tips4_1': 'Karanlık modu Aç/Kapat',
+  'onboarding.tips4_2': 'Türkçe/English dilini seç',
+  'onboarding.skip': 'Atla',
+  'onboarding.next': 'İleri',
+  'onboarding.done': 'Tamamla',
+  // Settings onboarding reset
+  'settings.onboarding_reset': 'Onboarding’i tekrar göster',
+  'settings.onboarding_reset_title': 'Onboarding’i sıfırla',
+  'settings.onboarding_reset_body': 'Uygulama yeniden açıldığında tanıtım turu gösterilecek. Devam edilsin mi?',
+  'settings.onboarding_reset_success': 'Onboarding sıfırlandı.',
+  'settings.onboarding_show_now': 'Tanıtım Ekranını Aç',
 
   // Statistics
   'statistics.title': 'İstatistikler',
@@ -148,7 +175,7 @@ const tr = {
   'stopwatch.hours_abbr': 'sa',
   'stopwatch.minutes_abbr': 'dk',
   'stopwatch.seconds_abbr': 'sn',
-  'stopwatch.centiseconds_abbr': 'sl',
+  'stopwatch.centiseconds_abbr': 'cs',
 };
 
 const en = {
@@ -204,6 +231,33 @@ const en = {
   'settings.icons_refs_link': 'Icons and References Used in the Application',
   'settings.icons_refs_title': 'License Information and Icon Attributions',
   'common.close': 'Close',
+  // Onboarding
+  'onboarding.title1': 'Start your study with the stopwatch',
+  'onboarding.body1': 'Start/stop the timer and record sessions with laps.',
+  'onboarding.title2': 'Add notes to your journal',
+  'onboarding.body2': 'Attach short notes to sessions to track your progress.',
+  'onboarding.title3': 'View your statistics',
+  'onboarding.body3': 'Analyze weekly/monthly summaries and averages.',
+  'onboarding.title4': 'Customize your settings',
+  'onboarding.body4': 'Personalize experience with dark mode and language options.',
+  // Tips bullets
+  'onboarding.tips1_1': 'Control session with Start/Stop',
+  'onboarding.tips1_2': 'Record lap split times',
+  'onboarding.tips2_1': 'Add short notes per lap',
+  'onboarding.tips2_2': 'Edit/delete notes anytime',
+  'onboarding.tips3_1': 'Explore weekly/monthly charts',
+  'onboarding.tips3_2': 'Track totals and averages',
+  'onboarding.tips4_1': 'Toggle Dark Mode',
+  'onboarding.tips4_2': 'Choose Turkish/English',
+  'onboarding.skip': 'Skip',
+  'onboarding.next': 'Next',
+  'onboarding.done': 'Done',
+  // Settings onboarding reset
+  'settings.onboarding_reset': 'Show onboarding again',
+  'settings.onboarding_reset_title': 'Reset Onboarding',
+  'settings.onboarding_reset_body': 'The intro tour will be shown on next app start. Continue?',
+  'settings.onboarding_reset_success': 'Onboarding reset.',
+  'settings.onboarding_show_now': 'Show onboarding now',
   // Statistics
   'statistics.title': 'Statistics',
   'statistics.subtitle': 'Track your study progress',

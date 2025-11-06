@@ -22,6 +22,7 @@ import Toast from '../components/Toast';
 
 // Salise etiketini bağımsız güncelleyen küçük bileşen
 const HundredthsTicker = React.memo(({ isRunning, color, coarseTime }) => {
+  const { t } = useLanguage();
   const [hundredths, setHundredths] = useState('00');
 
   useEffect(() => {
@@ -61,6 +62,7 @@ const HundredthsTicker = React.memo(({ isRunning, color, coarseTime }) => {
   return (
     <View style={[styles.timeSegment, styles.hundredthsSegment]}>
       <Text style={[styles.hundredthsText, { color }]}>{hundredths}</Text>
+      <Text style={[styles.segmentLabel, { color }]}>{t('stopwatch.centiseconds_abbr')}</Text>
     </View>
   );
 });
@@ -386,10 +388,11 @@ const StopwatchScreen = ({ navigation }) => {
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       {/* Kronometre Ekranı */}
       <View style={styles.timerContainer}>
-        <View style={styles.timerRow}>
+      <View style={styles.timerRow}>
         {(() => {
           const [h, m, s] = coarseTime.split(':');
           const hoursInt = parseInt(h, 10) || 0;
+          const showHundredths = hoursInt === 0; // 1 saat ve üzeri ise saliseleri gizle
           return (
             <>
               {hoursInt > 0 ? (
@@ -401,12 +404,16 @@ const StopwatchScreen = ({ navigation }) => {
               <TimerSegment value={m} label={t('stopwatch.minutes_abbr')} color={theme.textColor} />
               <Separator char=":" color={theme.textColor} />
               <TimerSegment value={s} label={t('stopwatch.seconds_abbr')} color={theme.textColor} />
-              <Separator char="." color={theme.textColor} gap={1} />
-              <HundredthsTicker 
-                isRunning={isRunning} 
-                color={theme.textColor} 
-                coarseTime={coarseTime}
-              />
+              {showHundredths ? (
+                <>
+                  <Separator char="." color={theme.textColor} gap={1} />
+                  <HundredthsTicker 
+                    isRunning={isRunning} 
+                    color={theme.textColor} 
+                    coarseTime={coarseTime}
+                  />
+                </>
+              ) : null}
             </>
           );
         })()}
@@ -614,7 +621,7 @@ const styles = StyleSheet.create({
 
   },
   hundredthsText: {
-    fontSize: 40,//32 idi
+    fontSize: 65,//diğer segmentlerle aynı boyut
     fontWeight: 'bold',//bold
     includeFontPadding: false,
   },
