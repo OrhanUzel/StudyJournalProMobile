@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Dimensions, ScrollView, Animated, Easing } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Dimensions, ScrollView } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '../context/ThemeContext';
@@ -45,57 +45,10 @@ const OnboardingScreen = ({ onDone }) => {
     },
   ];
 
-  const iconScale = useRef(new Animated.Value(1)).current;
-  const iconTranslateY = useRef(new Animated.Value(0)).current;
+  // Animasyonlar kapatıldı: ikon statik olarak gösterilecek
   
 
-  useEffect(() => {
-    // Reset starting values depending on index to vary animation style (only icon animations)
-    iconScale.setValue(index % 2 === 0 ? 0.92 : 1.02);
-    iconTranslateY.setValue(index % 2 === 0 ? -8 : 10);
-
-    const animations = [];
-
-    if (index % 2 === 0) {
-      // Even slides: spring scale + settle translate
-      animations.push(
-        Animated.spring(iconScale, {
-          toValue: 1,
-          friction: 6,
-          tension: 90,
-          useNativeDriver: true,
-        })
-      );
-      animations.push(
-        Animated.timing(iconTranslateY, {
-          toValue: 0,
-          duration: 280,
-          easing: Easing.out(Easing.quad),
-          useNativeDriver: true,
-        })
-      );
-    } else {
-      // Odd slides: slide up/down + gentle scale
-      animations.push(
-        Animated.timing(iconTranslateY, {
-          toValue: 0,
-          duration: 320,
-          easing: Easing.out(Easing.cubic),
-          useNativeDriver: true,
-        })
-      );
-      animations.push(
-        Animated.timing(iconScale, {
-          toValue: 1,
-          duration: 220,
-          easing: Easing.out(Easing.quad),
-          useNativeDriver: true,
-        })
-      );
-    }
-
-    Animated.parallel(animations).start();
-  }, [index]);
+  // Animasyonlar devre dışı: index değişiminde ekstra hareket uygulanmıyor
 
   const handleNext = () => {
     const next = Math.min(index + 1, slides.length - 1);
@@ -132,9 +85,9 @@ const OnboardingScreen = ({ onDone }) => {
       >
         {slides.map((s, i) => (
           <View key={i} style={[styles.slide, { width }]}> 
-            <Animated.View style={[styles.iconWrapper, { transform: [{ scale: iconScale }, { translateY: iconTranslateY }] }]}>
+            <View style={styles.iconWrapper}>
               <Ionicons name={s.iconName} size={92} color={theme.primaryColor} />
-            </Animated.View>
+            </View>
             <View style={[styles.contentBlock, { width: CONTENT_MAX_WIDTH }] }>
               <Text style={[styles.title, isNarrow && styles.titleSm, { color: theme.textColor }]}>{s.title}</Text>
               <Text style={[styles.body, isNarrow && styles.bodySm, { color: theme.textSecondary }]}>{s.body}</Text>

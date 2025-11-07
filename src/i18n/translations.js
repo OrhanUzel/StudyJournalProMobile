@@ -119,6 +119,7 @@ const tr = {
 
   // Records list
   'records.title': 'Çalışma Kayıtları',
+  'records.subtitle': 'Çalışmalarını yönet ',
   'records.empty': 'Henüz kaydedilmiş çalışma yok',
   'records.start_study': 'Çalışmaya Başla',
   'common.error': 'Hata',
@@ -188,7 +189,7 @@ const en = {
   'nav.record_detail': 'Record Detail',
 
   // App display names
-  'app.name': 'Study Journal',
+  'app.name': 'Study Journal Pro',
   'app.name.en': 'Study Journal Pro',
 
   // Home
@@ -304,6 +305,7 @@ const en = {
 
   // Records list
   'records.title': 'Study Records',
+  'records.subtitle': 'Manage your study progress',
   'records.empty': 'No recorded study yet',
   'records.start_study': 'Start Studying',
   'common.error': 'Error',

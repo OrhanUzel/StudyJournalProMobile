@@ -109,10 +109,7 @@ const RecordsStack = () => {
         name="RecordsList" 
         component={RecordsListScreen} 
         options={{ 
-          title: t('nav.records'),
-          headerTitleStyle: {
-            fontWeight: '600',
-          },
+          headerShown: false,
         }}
       />
       <Stack.Screen 

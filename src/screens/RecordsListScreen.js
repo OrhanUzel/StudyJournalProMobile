@@ -76,12 +76,28 @@ const RecordsListScreen = ({ navigation }) => {
           <Text style={[styles.recordDate, { color: theme.textColor }]}>
             {formatDate(item.day)}
           </Text>
-          <TouchableOpacity
-            style={styles.deleteButton}
-            onPress={() => handleDeleteRecord(item)}
-          >
-            <Ionicons name="trash-outline" size={20} color={theme.dangerColor} />
-          </TouchableOpacity>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <TouchableOpacity
+              style={[styles.iconButton, { borderColor: theme.borderColor }]}
+              onPress={() => navigation.navigate('RecordDetail', { recordId: item.id })}
+              activeOpacity={0.7}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              accessibilityRole="button"
+              accessibilityLabel={t('record.edit_lap_note')}
+            >
+              <Ionicons name="create-outline" size={20} color={theme.primaryColor} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.iconButton, { borderColor: theme.borderColor }]}
+              onPress={() => handleDeleteRecord(item)}
+              activeOpacity={0.7}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              accessibilityRole="button"
+              accessibilityLabel={t('common.delete')}
+            >
+              <Ionicons name="trash-outline" size={20} color={theme.dangerColor} />
+            </TouchableOpacity>
+          </View>
         </View>
         
         <View style={styles.recordDetails}>
@@ -107,16 +123,21 @@ const RecordsListScreen = ({ navigation }) => {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
-      <View style={styles.header}>
-        <Text style={[styles.headerTitle, { color: theme.textColor }]}>
-          {t('records.title')}
+      <View style={[styles.header, { borderBottomColor: theme.border, borderBottomWidth: 1 }]}>
+        <View style={styles.headerRow}>
+          <Text style={[styles.title, { color: theme.text }]}>
+            {t('nav.records')}
+          </Text>
+          <TouchableOpacity 
+            style={[styles.newButton, { backgroundColor: theme.primaryColor }]}
+            onPress={() => navigation.navigate('Stopwatch')}
+          >
+            <Ionicons name="add" size={24} color="#fff" />
+          </TouchableOpacity>
+        </View>
+        <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
+          {t('records.subtitle')}
         </Text>
-        <TouchableOpacity 
-          style={[styles.newButton, { backgroundColor: theme.primaryColor }]}
-          onPress={() => navigation.navigate('Stopwatch')}
-        >
-          <Ionicons name="add" size={24} color="#fff" />
-        </TouchableOpacity>
       </View>
 
       {loading ? (
@@ -172,17 +193,25 @@ const RecordsListScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 16,
   },
   header: {
+    padding: 16,
+    paddingTop: 60,
+    borderBottomWidth: 1,
+  },
+  headerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
   },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
+  title: {
+    fontSize: 28,
+    fontWeight: '700',
+    marginBottom: 8,
+  },
+  subtitle: {
+    fontSize: 14,
+    marginBottom: 8,
   },
   newButton: {
     width: 40,
@@ -197,6 +226,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   recordsList: {
+    padding: 16,
     paddingBottom: 20,
   },
   recordItem: {
@@ -221,6 +251,11 @@ const styles = StyleSheet.create({
   },
   deleteButton: {
     padding: 4,
+  },
+  iconButton: {
+    padding: 6,
+    borderWidth: 1,
+    borderRadius: 8,
   },
   recordDetails: {
     marginTop: 4,

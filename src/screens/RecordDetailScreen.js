@@ -46,6 +46,44 @@ const RecordDetailScreen = ({ route, navigation }) => {
   const [manualNoteY, setManualNoteY] = useState(0);
   const [isLapModalVisible, setIsLapModalVisible] = useState(false);
   const [isManualModalVisible, setIsManualModalVisible] = useState(false);
+  const [startAdjustMode, setStartAdjustMode] = useState('m'); // 'h' | 'm'
+  const [endAdjustMode, setEndAdjustMode] = useState('m'); // 'h' | 'm'
+
+  // Helpers for Android custom time controls
+  const parseHM = (hm) => {
+    const [h, m] = String(hm || '00:00').split(':').map((n) => parseInt(n, 10) || 0);
+    return { h, m };
+  };
+  const fmtHM = (h, m) => {
+    const hh = ((h % 24) + 24) % 24;
+    const mm = ((m % 60) + 60) % 60;
+    return `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}`;
+  };
+  const adjustStart = (unit, delta) => {
+    const { h, m } = parseHM(manualStartTime || '00:00');
+    const nh = unit === 'h' ? h + delta : h;
+    const nm = unit === 'm' ? m + delta : m;
+    const hm = fmtHM(nh, nm);
+    setManualStartTime(hm);
+    const comp = computeDurationHHMMSS(hm, manualEndTime);
+    if (comp) setManualDuration(comp);
+  };
+  const adjustEnd = (unit, delta) => {
+    const { h, m } = parseHM(manualEndTime || '00:00');
+    const nh = unit === 'h' ? h + delta : h;
+    const nm = unit === 'm' ? m + delta : m;
+    const hm = fmtHM(nh, nm);
+    setManualEndTime(hm);
+    const comp = computeDurationHHMMSS(manualStartTime, hm);
+    if (comp) setManualDuration(comp);
+  };
+
+  // Short label helper to avoid showing missing i18n keys like 'record.hour_short'
+  const tAbbr = (key, fallback) => {
+    const val = t(key);
+    if (!val || val === key) return fallback;
+    return val;
+  };
 
   const scrollToY = (y) => {
     try {
@@ -430,24 +468,17 @@ const RecordDetailScreen = ({ route, navigation }) => {
         )}
       </View>
       </ScrollView>
-      {/* Blur backdrop over the screen when any modal is visible */}
+      {/* Dim backdrop over the screen when any modal is visible */}
       {(isLapModalVisible || isManualModalVisible) && (
-        <>
-          <BlurView
-            intensity={40}
-            tint={isDarkMode ? 'dark' : 'light'}
-            style={styles.blurBackdrop}
-          />
-          <View style={[styles.dimOverlay, { backgroundColor: isDarkMode ? 'rgba(0,0,0,0.35)' : 'rgba(0,0,0,0.25)' }]} />
-        </>
+        <View style={[styles.dimOverlay, { backgroundColor: isDarkMode ? 'rgba(0,0,0,0.45)' : 'rgba(0,0,0,0.35)' }]} />
       )}
-  <Modal
+      <Modal
         visible={isLapModalVisible}
         transparent
         animationType="slide"
         onRequestClose={() => { setIsLapModalVisible(false); setEditingLapId(null); setEditingLapNote(''); }}
       >
-        <View style={styles.modalOverlay}>
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 80} style={styles.modalOverlay}>
           <View style={[styles.modalContent, theme.shadow?.lg, { backgroundColor: theme.cardBackground, borderColor: theme.borderColor }]}> 
             {/* Header with title and close button */}
             <View style={styles.modalHeaderRow}>
@@ -560,7 +591,7 @@ const RecordDetailScreen = ({ route, navigation }) => {
               </TouchableOpacity>
             </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
 
       {/* Manual Session Add Modal */}
@@ -576,7 +607,7 @@ const RecordDetailScreen = ({ route, navigation }) => {
           setManualNote('');
         }}
       >
-        <View style={styles.modalOverlay}>
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 80} style={styles.modalOverlay}>
           <View style={[styles.modalContent, theme.shadow?.lg, { backgroundColor: theme.cardBackground, borderColor: theme.borderColor }]}> 
             <View style={styles.modalHeaderRow}>
               <Text style={[styles.modalTitle, { color: theme.textColor }]}>{t('record.manual_add')}</Text>
@@ -619,7 +650,7 @@ const RecordDetailScreen = ({ route, navigation }) => {
                   maxLength={5}
                 />
               </View>
-            ) : (
+            ) : Platform.OS === 'ios' ? (
               <View style={styles.manualRow}>
                 <TouchableOpacity
                   style={[styles.manualInput, { justifyContent: 'center', borderColor: theme.borderColor }]}
@@ -646,9 +677,52 @@ const RecordDetailScreen = ({ route, navigation }) => {
                   </Text>
                 </TouchableOpacity>
               </View>
+            ) : (
+              <View style={[styles.manualRow, { marginBottom: 6 }] }>
+                <View style={[styles.manualInput, { borderColor: theme.borderColor, paddingVertical: 8, marginRight: 10 }] }>
+                  <Text style={{ color: theme.textSecondary, marginBottom: 8 }}>{t('record.start')}</Text>
+                  <View style={styles.timeControlRow}>
+                    <TouchableOpacity style={[styles.stepButton, { borderColor: theme.borderColor, backgroundColor: theme.background }]} onPress={() => adjustStart(startAdjustMode, (startAdjustMode === 'm' ? -5 : -1))}>
+                      <Ionicons name="chevron-down-outline" size={18} color={theme.textSecondary} />
+                    </TouchableOpacity>
+                    <Text style={[styles.timeValue, { color: theme.textColor }]}>{manualStartTime || '--:--'}</Text>
+                    <TouchableOpacity style={[styles.stepButton, { borderColor: theme.borderColor, backgroundColor: theme.background }]} onPress={() => adjustStart(startAdjustMode, (startAdjustMode === 'm' ? +5 : +1))}>
+                      <Ionicons name="chevron-up-outline" size={18} color={theme.textSecondary} />
+                    </TouchableOpacity>
+                    <View style={styles.segmentRow}>
+                      <TouchableOpacity style={[styles.segmentOption, { borderColor: theme.borderColor, backgroundColor: startAdjustMode === 'h' ? theme.primaryMuted || theme.borderColor : theme.background }]} onPress={() => setStartAdjustMode('h')}>
+                        <Text style={[styles.segmentText, { color: theme.textSecondary }]}>{tAbbr('stopwatch.hours_abbr', 'H')}</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity style={[styles.segmentOption, { borderColor: theme.borderColor, backgroundColor: startAdjustMode === 'm' ? theme.primaryMuted || theme.borderColor : theme.background }]} onPress={() => setStartAdjustMode('m')}>
+                        <Text style={[styles.segmentText, { color: theme.textSecondary }]}>{tAbbr('stopwatch.minutes_abbr', 'M')}</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                </View>
+                <View style={[styles.manualInput, { borderColor: theme.borderColor, paddingVertical: 8, marginRight: 0 }] }>
+                  <Text style={{ color: theme.textSecondary, marginBottom: 8 }}>{t('record.end')}</Text>
+                  <View style={styles.timeControlRow}>
+                    <TouchableOpacity style={[styles.stepButton, { borderColor: theme.borderColor, backgroundColor: theme.background }]} onPress={() => adjustEnd(endAdjustMode, (endAdjustMode === 'm' ? -5 : -1))}>
+                      <Ionicons name="chevron-down-outline" size={18} color={theme.textSecondary} />
+                    </TouchableOpacity>
+                    <Text style={[styles.timeValue, { color: theme.textColor }]}>{manualEndTime || '--:--'}</Text>
+                    <TouchableOpacity style={[styles.stepButton, { borderColor: theme.borderColor, backgroundColor: theme.background }]} onPress={() => adjustEnd(endAdjustMode, (endAdjustMode === 'm' ? +5 : +1))}>
+                      <Ionicons name="chevron-up-outline" size={18} color={theme.textSecondary} />
+                    </TouchableOpacity>
+                    <View style={styles.segmentRow}>
+                      <TouchableOpacity style={[styles.segmentOption, { borderColor: theme.borderColor, backgroundColor: endAdjustMode === 'h' ? theme.primaryMuted || theme.borderColor : theme.background }]} onPress={() => setEndAdjustMode('h')}>
+                        <Text style={[styles.segmentText, { color: theme.textSecondary }]}>{tAbbr('stopwatch.hours_abbr', 'H')}</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity style={[styles.segmentOption, { borderColor: theme.borderColor, backgroundColor: endAdjustMode === 'm' ? theme.primaryMuted || theme.borderColor : theme.background }]} onPress={() => setEndAdjustMode('m')}>
+                        <Text style={[styles.segmentText, { color: theme.textSecondary }]}>{tAbbr('stopwatch.minutes_abbr', 'M')}</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                </View>
+              </View>
             )}
 
-            {Platform.OS !== 'web' && (
+            {Platform.OS === 'ios' && (
               <View style={{ marginTop: 8 }}>
                 {showStartPicker && (
                   <DateTimePicker
@@ -690,7 +764,7 @@ const RecordDetailScreen = ({ route, navigation }) => {
             )}
 
             <TextInput
-              style={[styles.manualNoteInput, { color: theme.textColor, borderColor: theme.borderColor, marginTop: 12 }]}
+              style={[styles.manualNoteInput, { color: theme.textColor, borderColor: theme.borderColor, marginTop: 6 }]}
               placeholder={t('record.optional_note')}
               placeholderTextColor={theme.textSecondary}
               value={manualNote}
@@ -722,7 +796,7 @@ const RecordDetailScreen = ({ route, navigation }) => {
               </TouchableOpacity>
             </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
       <Toast
         visible={showToast}
@@ -925,6 +999,41 @@ const styles = StyleSheet.create({
     padding: 12,
     minHeight: 60,
     textAlignVertical: 'top',
+  },
+  timeControlRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    flexWrap: 'wrap',
+  },
+  stepButton: {
+    paddingVertical: 4,
+    paddingHorizontal: 6,
+    borderWidth: 1,
+    borderRadius: 6,
+    marginRight: 6,
+  },
+  segmentRow: {
+    flexDirection: 'row',
+    marginLeft: 0,
+    marginTop: 6,
+  },
+  segmentOption: {
+    borderWidth: 1,
+    borderRadius: 6,
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    marginRight: 6,
+  },
+  segmentText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  timeValue: {
+    minWidth: 52,
+    textAlign: 'center',
+    fontSize: 16,
+    fontWeight: '600',
   },
   // Backdrop overlays for modal
   blurBackdrop: {
