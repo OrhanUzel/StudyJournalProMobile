@@ -7,6 +7,7 @@ import AddButton from '../components/AddButton';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
+import AdsBanner from '../components/AdsBanner';
 
 /**
  * HomeScreen component displays the list of notes and provides navigation to add new notes
@@ -60,6 +61,7 @@ const HomeScreen = ({ navigation }) => {
 
   const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
+  const bannerUnitId = 'ca-app-pub-3940256099942544/9214589741';
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
@@ -117,6 +119,19 @@ const HomeScreen = ({ navigation }) => {
             fadeAnim.setValue(1);
             setDeleteTargetId(null);
           });
+        }}
+      />
+
+      {/* Banner Ad - tab bar ve FAB ile çakışmayacak şekilde en altta */}
+      <AdsBanner
+        unitId={bannerUnitId}
+        containerStyle={{
+          paddingHorizontal: spacing.md,
+          paddingTop: 8,
+          paddingBottom: Math.max(insets.bottom, 8),
+          borderTopWidth: 1,
+          borderTopColor: theme.border,
+          backgroundColor: theme.background,
         }}
       />
 

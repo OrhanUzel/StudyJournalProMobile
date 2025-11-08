@@ -7,6 +7,9 @@ import { Ionicons } from '@expo/vector-icons';
 import DatabaseService from '../services/DatabaseService';
 import { useIsFocused } from '@react-navigation/native';
 import { useLanguage } from '../context/LanguageContext';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
+import AdsBanner from '../components/AdsBanner';
 
 /**
  * StatisticsScreen component displays study time statistics
@@ -15,6 +18,9 @@ const StatisticsScreen = () => {
   const { getStudyStats } = useNotes();
   const { theme, spacing, borderRadius } = useTheme();
   const { t, language } = useLanguage();
+  const insets = useSafeAreaInsets();
+  const tabBarHeight = useBottomTabBarHeight();
+  const bannerUnitId = 'ca-app-pub-3940256099942544/9214589741';
   const [activePeriod, setActivePeriod] = useState('week');
   const [stats, setStats] = useState([]);
   const isFocused = useIsFocused();
@@ -259,6 +265,17 @@ const StatisticsScreen = () => {
                 </View>
               </View>
             </View>
+            {/* Banner Ad - içerik sonunda, grafikten sonra */}
+            <AdsBanner
+              unitId={bannerUnitId}
+              containerStyle={{
+                paddingTop: 8,
+                paddingBottom: Math.max(insets.bottom, 8),
+                borderTopWidth: 1,
+                borderTopColor: theme.border,
+                backgroundColor: theme.background,
+              }}
+            />
           </>
         ) : (
           <View style={styles.emptyContainer}>

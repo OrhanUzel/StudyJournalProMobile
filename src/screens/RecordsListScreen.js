@@ -6,7 +6,8 @@ import {
   FlatList, 
   TouchableOpacity, 
   Alert,
-  ActivityIndicator 
+  ActivityIndicator,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
@@ -16,6 +17,7 @@ import ConfirmDialog from '../components/ConfirmDialog';
 import { useIsFocused } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
+import AdsBanner from '../components/AdsBanner';
 
 const RecordsListScreen = ({ navigation }) => {
   const { theme } = useTheme();
@@ -27,6 +29,7 @@ const RecordsListScreen = ({ navigation }) => {
   const isFocused = useIsFocused();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [recordToDelete, setRecordToDelete] = useState(null);
+  const bannerUnitId = 'ca-app-pub-3940256099942544/9214589741';
 
   // Kayıtları yükle
   const loadRecords = async () => {
@@ -166,6 +169,11 @@ const RecordsListScreen = ({ navigation }) => {
         </View>
       )}
 
+      <AdsBanner
+        unitId={bannerUnitId}
+        containerStyle={[styles.bannerContainer, { borderTopColor: theme.border, borderTopWidth: 1 }]}
+      />
+
       <ConfirmDialog
         visible={showDeleteConfirm}
         title={t('records.delete_title')}
@@ -296,6 +304,12 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: 'bold',
     fontSize: 16,
+  },
+  bannerContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 8,
+    backgroundColor: 'transparent',
   },
 });
 

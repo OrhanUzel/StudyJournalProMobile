@@ -6,12 +6,36 @@ import { ThemeProvider } from './src/context/ThemeContext';
 import { NotesProvider } from './src/context/NotesContext';
 import { LanguageProvider } from './src/context/LanguageContext';
 import { Platform } from 'react-native';
+import { requestTrackingPermissionsAsync } from 'expo-tracking-transparency';
 import Constants from 'expo-constants';
 import AppNavigator from './src/navigation/AppNavigator';
 import StopwatchService from './src/services/StopwatchService';
 
 export default function App() {
   useEffect(() => {
+    // iOS ATT iznini uygulama açılışında iste
+    (async () => {
+      try {
+        if (Platform.OS === 'ios' && Constants?.appOwnership !== 'expo') {
+          const { status } = await requestTrackingPermissionsAsync();
+          // İzin durumu: 'granted' | 'denied' | 'unavailable'
+          // Burada ileride GDPR/CCPA için reklam talebini kişisel/kişisel olmayan şekle ayarlayabiliriz.
+        }
+      } catch (e) {
+        console.warn('ATT permission request failed:', e?.message || e);
+      }
+    })();
+
+    // iOS/Android yerel derlemede reklam SDK başlatma (Expo Go'da devre dışı)
+    if (Platform.OS !== 'web' && Constants?.appOwnership !== 'expo') {
+      try {
+        const { default: mobileAds } = require('react-native-google-mobile-ads');
+        mobileAds().initialize();
+      } catch (e) {
+        console.warn('MobileAds init failed:', e?.message || e);
+      }
+    }
+
     // Expo Go veya web ortamında bildirimleri tamamen devre dışı bırak
     if (Platform.OS === 'web' || (Constants?.appOwnership === 'expo')) {
       return;

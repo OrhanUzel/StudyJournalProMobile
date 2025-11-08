@@ -16,6 +16,9 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { BlurView } from 'expo-blur';
+import AdsBanner from '../components/AdsBanner';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import Toast from '../components/Toast';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -26,6 +29,9 @@ const RecordDetailScreen = ({ route, navigation }) => {
   const { recordId } = route.params;
   const { theme, isDarkMode } = useTheme();
   const { t, language } = useLanguage();
+  const insets = useSafeAreaInsets();
+  const tabBarHeight = useBottomTabBarHeight();
+  const bannerUnitId = 'ca-app-pub-3940256099942544/9214589741';
   const [record, setRecord] = useState(null);
   const [loading, setLoading] = useState(true);
   const [dailyNote, setDailyNote] = useState('');
@@ -467,6 +473,19 @@ const RecordDetailScreen = ({ route, navigation }) => {
           </View>
         )}
       </View>
+
+      {/* Banner Ad - sayfa sonunda, içerik bittiğinde */}
+      <AdsBanner
+        unitId={bannerUnitId}
+        containerStyle={{
+          paddingTop: 8,
+          paddingBottom: Math.max(insets.bottom, 8),
+          borderTopWidth: 1,
+          borderTopColor: theme.borderColor,
+          backgroundColor: theme.background,
+        }}
+      />
+
       </ScrollView>
       {/* Dim backdrop over the screen when any modal is visible */}
       {(isLapModalVisible || isManualModalVisible) && (

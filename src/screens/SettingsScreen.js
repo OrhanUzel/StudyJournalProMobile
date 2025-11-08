@@ -6,11 +6,17 @@ import { Ionicons } from '@expo/vector-icons';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { useLanguage } from '../context/LanguageContext';
 import OnboardingScreen from './OnboardingScreen';
+import AdsBanner from '../components/AdsBanner';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 
 const SettingsScreen = () => {
   const { theme, isDarkMode, toggleTheme, spacing, borderRadius } = useTheme();
   const { clearAllNotes } = useNotes();
   const { t, language, setLanguage } = useLanguage();
+  const insets = useSafeAreaInsets();
+  const tabBarHeight = useBottomTabBarHeight();
+  const bannerUnitId = 'ca-app-pub-3940256099942544/9214589741';
   const [showClearConfirm, setShowClearConfirm] = React.useState(false);
   const [showIconsModal, setShowIconsModal] = React.useState(false);
   const [onboardingVisible, setOnboardingVisible] = React.useState(false);
@@ -228,6 +234,19 @@ const SettingsScreen = () => {
             </View>
           </View>
         </View>
+
+        {/* Banner Ad - Ayarlar içeriğinin sonunda */}
+        <AdsBanner
+          unitId={bannerUnitId}
+          containerStyle={{
+            paddingTop: 8,
+            paddingBottom: Math.max(insets.bottom, 8),
+            borderTopWidth: 1,
+            borderTopColor: theme.border,
+            backgroundColor: theme.background,
+          }}
+        />
+
       </ScrollView>
 
       {/* Icons & References Modal */}

@@ -14,8 +14,20 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSUserTrackingUsageDescription": "Tracking permission is used to deliver relevant ads and support app sustainability."
+      }
     },
+    "plugins": [
+      [
+        "react-native-google-mobile-ads",
+        {
+          "androidAppId": "ca-app-pub-3940256099942544/9214589741",
+          "iosAppId": "ca-app-pub-3940256099942544/9214589741"
+        }
+      ]
+    ],
   "android": {
     "package": "com.studyjournalpromobile",
     "adaptiveIcon": {
