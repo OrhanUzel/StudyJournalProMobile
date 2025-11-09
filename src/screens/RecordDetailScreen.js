@@ -412,6 +412,21 @@ const RecordDetailScreen = ({ route, navigation }) => {
       </View>
 
       {/* Manuel Seans Ekle (Buton + Modal açılır) */}
+      {/* Banner Ad - manuel seans ekleme bölümünün üzeri */}
+      <AdsBanner
+        unitId={bannerUnitId}
+        containerStyle={{
+          paddingHorizontal: 8,
+          paddingTop: 8,
+          paddingBottom: 8,
+          marginTop: 8,
+          marginBottom: 8,
+          borderTopWidth: 1,
+          borderBottomWidth: 1,
+          borderColor: theme.borderColor,
+          backgroundColor: theme.background,
+        }}
+      />
       <View style={[styles.manualSection, theme.shadow?.sm, { backgroundColor: theme.cardBackground, borderColor: theme.borderColor, borderWidth: 1 }]}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
           <Text style={[styles.sectionTitle, { color: theme.textSecondary, fontSize: 16, fontWeight: '600' }]}>{t('record.manual_add')}</Text>
@@ -434,20 +449,41 @@ const RecordDetailScreen = ({ route, navigation }) => {
           {t('record.sessions', { count: groupSessions((record.laps || []).filter(l => !l.isManual)).length })}
         </Text>
         {(record.laps || []).filter(l => !l.isManual).length > 0 ? (
-          groupSessions(record.laps).map((group) => (
-            <View key={`session-${group.sessionIndex}`} style={[styles.sessionSection, theme.shadow?.sm, { backgroundColor: theme.cardBackground, borderColor: theme.borderColor, borderWidth: 1 }] }>
-              <View style={styles.sessionHeader}>
-                <Text style={[styles.sectionTitle, { color: theme.textColor }]}>{t('record.session', { index: group.sessionIndex })}</Text>
-                <Text style={[styles.sessionCount, { color: theme.textSecondary }]}>{t('record.laps', { count: group.items.length })}</Text>
-              </View>
-              <FlatList
-                data={group.items}
-                renderItem={renderLapItem}
-                keyExtractor={(item, idx) => (item.id != null ? `lap-${item.id}` : `lap-${item.sessionIndex}-${item.lapDate}-${idx}`)}
-                scrollEnabled={false}
-              />
-            </View>
-          ))
+          (() => {
+            const groups = groupSessions(record.laps);
+            return groups.map((group, idx) => (
+              <React.Fragment key={`session-wrap-${group.sessionIndex}`}>
+                <View key={`session-${group.sessionIndex}`} style={[styles.sessionSection, theme.shadow?.sm, { backgroundColor: theme.cardBackground, borderColor: theme.borderColor, borderWidth: 1 }] }>
+                  <View style={styles.sessionHeader}>
+                    <Text style={[styles.sectionTitle, { color: theme.textColor }]}>{t('record.session', { index: group.sessionIndex })}</Text>
+                    <Text style={[styles.sessionCount, { color: theme.textSecondary }]}>{t('record.laps', { count: group.items.length })}</Text>
+                  </View>
+                  <FlatList
+                    data={group.items}
+                    renderItem={renderLapItem}
+                    keyExtractor={(item, idx2) => (item.id != null ? `lap-${item.id}` : `lap-${item.sessionIndex}-${item.lapDate}-${idx2}`)}
+                    scrollEnabled={false}
+                  />
+                </View>
+                {idx < groups.length - 1 && (
+                  <AdsBanner
+                    unitId={bannerUnitId}
+                    containerStyle={{
+                      paddingHorizontal: 8,
+                      paddingTop: 8,
+                      paddingBottom: 8,
+                      marginTop: 8,
+                      marginBottom: 8,
+                      borderTopWidth: 1,
+                      borderBottomWidth: 1,
+                      borderColor: theme.borderColor,
+                      backgroundColor: theme.background,
+                    }}
+                  />
+                )}
+              </React.Fragment>
+            ));
+          })()
         ) : (
           <View style={styles.emptyLapsContainer}>
             <Text style={[styles.emptyLapsText, { color: theme.textSecondary }]}>{t('record.no_laps')}</Text>
@@ -478,8 +514,10 @@ const RecordDetailScreen = ({ route, navigation }) => {
       <AdsBanner
         unitId={bannerUnitId}
         containerStyle={{
+          paddingHorizontal: 8,
           paddingTop: 8,
           paddingBottom: Math.max(insets.bottom, 8),
+          marginTop: 8,
           borderTopWidth: 1,
           borderTopColor: theme.borderColor,
           backgroundColor: theme.background,

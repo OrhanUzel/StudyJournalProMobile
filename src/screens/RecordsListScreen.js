@@ -20,7 +20,7 @@ import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import AdsBanner from '../components/AdsBanner';
 
 const RecordsListScreen = ({ navigation }) => {
-  const { theme } = useTheme();
+  const { theme, spacing } = useTheme();
   const { t, language } = useLanguage();
   const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
@@ -152,6 +152,21 @@ const RecordsListScreen = ({ navigation }) => {
           data={records}
           renderItem={renderRecordItem}
           keyExtractor={(item) => item.id.toString()}
+          ItemSeparatorComponent={() => (
+            <AdsBanner
+              unitId={bannerUnitId}
+              containerStyle={[
+                styles.bannerContainer,
+                {
+                  borderTopColor: theme.border,
+                  borderTopWidth: 1,
+                  paddingHorizontal: spacing?.sm ?? 8,
+                  marginTop: spacing?.sm ?? 8,
+                  marginBottom: spacing?.sm ?? 8,
+                },
+              ]}
+            />
+          )}
           contentContainerStyle={[styles.recordsList, { paddingBottom: insets.bottom + tabBarHeight + 16 }]}
         />
       ) : (
@@ -171,7 +186,16 @@ const RecordsListScreen = ({ navigation }) => {
 
       <AdsBanner
         unitId={bannerUnitId}
-        containerStyle={[styles.bannerContainer, { borderTopColor: theme.border, borderTopWidth: 1 }]}
+        containerStyle={[
+          styles.bannerContainer,
+          {
+            borderTopColor: theme.border,
+            borderTopWidth: 1,
+            paddingHorizontal: spacing?.sm ?? 8,
+            marginTop: spacing?.sm ?? 8,
+            marginBottom: spacing?.sm ?? 8,
+          },
+        ]}
       />
 
       <ConfirmDialog

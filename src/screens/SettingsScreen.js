@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Switch, Alert, ScrollView, Linking, Image, Modal } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Switch, Alert, ScrollView, Linking, Image, Modal, Platform } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { useNotes } from '../context/NotesContext';
 import { Ionicons } from '@expo/vector-icons';
@@ -9,6 +9,8 @@ import OnboardingScreen from './OnboardingScreen';
 import AdsBanner from '../components/AdsBanner';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
+import Constants from 'expo-constants';
+import { initIap, getProducts, buyRemoveAds, restorePurchases, isAdsDisabled } from '../services/InAppPurchaseService';
 
 const SettingsScreen = () => {
   const { theme, isDarkMode, toggleTheme, spacing, borderRadius } = useTheme();
@@ -17,9 +19,58 @@ const SettingsScreen = () => {
   const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
   const bannerUnitId = 'ca-app-pub-3940256099942544/9214589741';
-  const [showClearConfirm, setShowClearConfirm] = React.useState(false);
-  const [showIconsModal, setShowIconsModal] = React.useState(false);
-  const [onboardingVisible, setOnboardingVisible] = React.useState(false);
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const [showIconsModal, setShowIconsModal] = useState(false);
+  const [onboardingVisible, setOnboardingVisible] = useState(false);
+  const [adsDisabled, setAdsDisabledState] = useState(false);
+  const [iapReady, setIapReady] = useState(false);
+  const [product, setProduct] = useState(null);
+  const [purchaseLoading, setPurchaseLoading] = useState(false);
+  const [restoreLoading, setRestoreLoading] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      const isSupported = Platform.OS === 'android' && Constants?.appOwnership !== 'expo';
+      if (isSupported) {
+        const ready = await initIap();
+        setIapReady(!!ready);
+        // On launch, try restore and read flag
+        await restorePurchases();
+        const disabled = await isAdsDisabled();
+        setAdsDisabledState(disabled);
+        const products = await getProducts();
+        const p = products?.find((x) => x.productId === 'remove_ads') || products?.[0] || null;
+        setProduct(p);
+      } else {
+        // In web / Expo Go dev environments, just read flag; skip IAP calls to avoid warnings
+        const disabled = await isAdsDisabled();
+        setAdsDisabledState(disabled);
+      }
+    })();
+  }, []);
+
+  const handleBuyRemoveAds = async () => {
+    setPurchaseLoading(true);
+    const ok = await buyRemoveAds();
+    setPurchaseLoading(false);
+    if (ok) {
+      setAdsDisabledState(true);
+      Alert.alert(language === 'en' ? 'Success' : 'Başarılı', language === 'en' ? 'Ads removed.' : 'Reklamlar kaldırıldı.');
+    } else {
+      Alert.alert(language === 'en' ? 'Error' : 'Hata', language === 'en' ? 'Purchase failed or unavailable.' : 'Satın alma başarısız veya mevcut değil.');
+    }
+  };
+
+  const handleRestorePurchases = async () => {
+    setRestoreLoading(true);
+    const ok = await restorePurchases();
+    setRestoreLoading(false);
+    setAdsDisabledState(!!ok);
+    Alert.alert(
+      language === 'en' ? 'Restore' : 'Geri Yükle',
+      ok ? (language === 'en' ? 'Purchases restored.' : 'Satın alımlar geri yüklendi.') : (language === 'en' ? 'No purchases found.' : 'Satın alım bulunamadı.')
+    );
+  };
   
   const handleClearNotes = () => {
     setShowClearConfirm(true);
@@ -65,6 +116,65 @@ const SettingsScreen = () => {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
+        {/* Top Banner above Ads & Purchases */}
+        <AdsBanner
+          unitId={bannerUnitId}
+          containerStyle={{
+            paddingHorizontal: 8,
+            paddingTop: 8,
+            paddingBottom: 8,
+            marginTop: 8,
+            marginBottom: 12,
+            borderBottomWidth: 1,
+            borderBottomColor: theme.border,
+            backgroundColor: theme.background,
+          }}
+        />
+        {/* Ads & Purchases Section (moved to top) */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: theme.text }]}> 
+            {language === 'en' ? 'Ads & Purchases' : 'Reklamlar ve Satın Alma'}
+          </Text>
+          <View style={[styles.settingCard, { backgroundColor: theme.card, borderColor: theme.border, borderRadius: borderRadius.lg }]}> 
+            <View style={styles.settingRow}>
+              <View style={styles.settingInfo}>
+                <Ionicons name="remove-circle-outline" size={20} color={theme.primary} style={styles.settingIcon} />
+                <Text style={[styles.settingText, { color: theme.text }]}> 
+                  {language === 'en' ? 'Remove Ads' : 'Reklamları Kaldır'}
+                </Text>
+              </View>
+              {adsDisabled ? (
+                <Text style={{ color: theme.successColor, fontWeight: '600' }}>
+                  {language === 'en' ? 'Disabled' : 'Kapalı'}
+                </Text>
+              ) : (
+                <TouchableOpacity
+                  style={[styles.contactButton, { borderColor: theme.border, backgroundColor: 'transparent', paddingVertical: 8, paddingHorizontal: 12 }]}
+                  onPress={handleBuyRemoveAds}
+                  disabled={!iapReady || purchaseLoading}
+                >
+                  <Text style={{ color: theme.primary }}>{product?.price || (language === 'en' ? 'Buy' : 'Satın Al')}</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+            <View style={[styles.divider, { backgroundColor: theme.border }]} />
+            <View style={styles.settingRow}>
+              <View style={styles.settingInfo}>
+                <Ionicons name="refresh-outline" size={20} color={theme.primary} style={styles.settingIcon} />
+                <Text style={[styles.settingText, { color: theme.text }]}> 
+                  {language === 'en' ? 'Restore Purchases' : 'Satın Alımı Geri Yükle'}
+                </Text>
+              </View>
+              <TouchableOpacity
+                style={[styles.contactButton, { borderColor: theme.border, backgroundColor: 'transparent', paddingVertical: 8, paddingHorizontal: 12 }]}
+                onPress={handleRestorePurchases}
+                disabled={!iapReady || restoreLoading}
+              >
+                <Text style={{ color: theme.primary }}>{language === 'en' ? 'Restore' : 'Geri Yükle'}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
         {/* Appearance Section */}
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: theme.text }]}>
@@ -232,20 +342,10 @@ const SettingsScreen = () => {
                 {t('settings.copyright')}
               </Text>
             </View>
-          </View>
         </View>
+      </View>
 
-        {/* Banner Ad - Ayarlar içeriğinin sonunda */}
-        <AdsBanner
-          unitId={bannerUnitId}
-          containerStyle={{
-            paddingTop: 8,
-            paddingBottom: Math.max(insets.bottom, 8),
-            borderTopWidth: 1,
-            borderTopColor: theme.border,
-            backgroundColor: theme.background,
-          }}
-        />
+      
 
       </ScrollView>
 

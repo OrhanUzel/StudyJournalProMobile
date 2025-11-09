@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Pressable } from 'react-native';
 import { useNotes } from '../context/NotesContext';
 import { useTheme } from '../context/ThemeContext';
@@ -10,6 +10,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import AdsBanner from '../components/AdsBanner';
+import { InterstitialAd, AdEventType } from 'react-native-google-mobile-ads';
 
 /**
  * StatisticsScreen component displays study time statistics
@@ -21,6 +22,29 @@ const StatisticsScreen = () => {
   const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
   const bannerUnitId = 'ca-app-pub-3940256099942544/9214589741';
+  const interstitialUnitId = 'ca-app-pub-3940256099942544/1033173712';
+  const lastInterstitialTsRef = useRef(0);
+
+  const showInterstitialIfEligible = (periodKey) => {
+    if (periodKey === 'week') return;
+    const now = Date.now();
+    // Basit frekans kısıtlaması (>=90sn aralık)
+    if (now - lastInterstitialTsRef.current < 90000) return;
+    try {
+      const ad = InterstitialAd.createForAdRequest(interstitialUnitId, {
+        requestNonPersonalizedAdsOnly: true,
+      });
+      const unsubLoaded = ad.addAdEventListener(AdEventType.LOADED, () => ad.show());
+      const unsubClosed = ad.addAdEventListener(AdEventType.CLOSED, () => {
+        unsubLoaded();
+        unsubClosed();
+      });
+      ad.load();
+      lastInterstitialTsRef.current = now;
+    } catch (e) {
+      // sessizce geç
+    }
+  };
   const [activePeriod, setActivePeriod] = useState('week');
   const [stats, setStats] = useState([]);
   const isFocused = useIsFocused();
@@ -216,7 +240,11 @@ const StatisticsScreen = () => {
                       activePeriod === opt.key && styles.dropdownItemActive,
                       activePeriod === opt.key && { backgroundColor: theme.primary },
                     ]}
-                    onPress={() => { setActivePeriod(opt.key); setShowPeriodMenu(false); }}
+                    onPress={() => {
+                      showInterstitialIfEligible(opt.key);
+                      setActivePeriod(opt.key);
+                      setShowPeriodMenu(false);
+                    }}
                   >
                     <Text style={{ color: activePeriod === opt.key ? '#fff' : theme.text }}>{opt.label}</Text>
                   </Pressable>
@@ -245,6 +273,21 @@ const StatisticsScreen = () => {
               }
               period={activePeriod}
             />
+            {/* Banner Ad - özet karttan hemen önce konumlandırıldı */}
+            <AdsBanner
+              unitId={bannerUnitId}
+              containerStyle={{
+                paddingHorizontal: spacing.sm,
+                paddingTop: 8,
+                paddingBottom: 8,
+                marginTop: spacing.sm,
+                marginBottom: spacing.sm,
+                borderTopWidth: 1,
+                borderBottomWidth: 1,
+                borderColor: theme.border,
+                backgroundColor: theme.background,
+              }}
+            />
             <View
               style={[
                 styles.summaryCard,
@@ -265,17 +308,7 @@ const StatisticsScreen = () => {
                 </View>
               </View>
             </View>
-            {/* Banner Ad - içerik sonunda, grafikten sonra */}
-            <AdsBanner
-              unitId={bannerUnitId}
-              containerStyle={{
-                paddingTop: 8,
-                paddingBottom: Math.max(insets.bottom, 8),
-                borderTopWidth: 1,
-                borderTopColor: theme.border,
-                backgroundColor: theme.background,
-              }}
-            />
+            {/* Alt boşluk için kaydırma sonuna padding eklendi */}
           </>
         ) : (
           <View style={styles.emptyContainer}>

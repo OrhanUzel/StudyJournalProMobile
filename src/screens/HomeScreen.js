@@ -73,6 +73,22 @@ const HomeScreen = ({ navigation }) => {
         </Text>
       </View>
 
+      {/* Banner Ad - başlık altı, içeriğin hemen üstünde yüksek görünürlük */}
+      <AdsBanner
+        unitId={bannerUnitId}
+        containerStyle={{
+          paddingHorizontal: spacing.sm,
+          paddingTop: 8,
+          paddingBottom: 8,
+          marginTop: spacing.sm,
+          marginBottom: spacing.sm,
+          borderTopWidth: 1,
+          borderBottomWidth: 1,
+          borderColor: theme.border,
+          backgroundColor: theme.background,
+        }}
+      />
+
       {/* Notes List */}
       <FlatList
         data={notes}
@@ -119,19 +135,6 @@ const HomeScreen = ({ navigation }) => {
             fadeAnim.setValue(1);
             setDeleteTargetId(null);
           });
-        }}
-      />
-
-      {/* Banner Ad - tab bar ve FAB ile çakışmayacak şekilde en altta */}
-      <AdsBanner
-        unitId={bannerUnitId}
-        containerStyle={{
-          paddingHorizontal: spacing.md,
-          paddingTop: 8,
-          paddingBottom: Math.max(insets.bottom, 8),
-          borderTopWidth: 1,
-          borderTopColor: theme.border,
-          backgroundColor: theme.background,
         }}
       />
 
