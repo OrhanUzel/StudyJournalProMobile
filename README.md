@@ -1,4 +1,4 @@
-# Study Journal Pro Mobile <a href="https://play.google.com/store/apps/details?id=com.studyjournalpromobile" title="Open on Google Play"><img src="assets/app-icon.png" alt="Study Journal Pro App Icon" width="64" /></a>
+# Study Journal Pro Mobile <a href="https://play.google.com/store/apps/details?id=com.studyjournalpromobile" title="Open on Google Play"><img src="assets/app-icon.png" alt="Study Journal Pro App Icon" width="64" style="vertical-align: middle;" /></a>
 
 A modern, beautiful, and well-structured mobile app built with React Native (Expo) to help users track their study sessions, take notes, and view progress statistics.
 
@@ -15,35 +15,55 @@ A modern, beautiful, and well-structured mobile app built with React Native (Exp
 
 ## Screenshots
 
-In‑app screenshots are under `assets/screenshots/`. Listed with titles and short descriptions:
+In‑app screenshots are under `assets/screenshots/`. Below is a compact two‑column layout:
 
-### Home (Study Journal)
-- Main screen with study logs, recent notes, and navigation.
-<img src="assets/screenshots/study-journal.jpg" alt="Home (Study Journal)" width="320" />
-
-### Stopwatch
-- Start/stop session timing; record laps; focus‑friendly timer.
-<img src="assets/screenshots/stopwatch.jpg" alt="Stopwatch" width="320" />
-
-### Record Detail
-- Details of a single study entry: duration, notes, and edit options.
-<img src="assets/screenshots/record-detail.jpg" alt="Record Detail" width="320" />
-
-### Statistics Choice
-- Picker to choose the metrics/filters you want to visualize.
-<img src="assets/screenshots/statistics-choice.jpg" alt="Statistics Choice" width="320" />
-
-### Statistics
-- Charts displaying your study progress.
-<img src="assets/screenshots/statistics.jpg" alt="Statistics" width="320" />
-
-### Settings
-- Theme (dark/light), remove/restore ads, and app preferences.
-<img src="assets/screenshots/settings.jpg" alt="Settings" width="320" />
-
-### About
-- App version, developer links, and references.
-<img src="assets/screenshots/about.jpg" alt="About" width="320" />
+<table>
+  <tr>
+    <td>
+      <img src="assets/screenshots/study-journal.jpg" alt="Home (Study Journal)" width="260" />
+      <br/>
+      <em>Home (Study Journal): Main screen with study logs and navigation.</em>
+    </td>
+    <td>
+      <img src="assets/screenshots/stopwatch.jpg" alt="Stopwatch" width="260" />
+      <br/>
+      <em>Stopwatch: Start/stop timing; record laps; focus‑friendly timer.</em>
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <img src="assets/screenshots/record-detail.jpg" alt="Record Detail" width="260" />
+      <br/>
+      <em>Record Detail: Duration, notes, and edit options.</em>
+    </td>
+    <td>
+      <img src="assets/screenshots/statistics-choice.jpg" alt="Statistics Choice" width="260" />
+      <br/>
+      <em>Statistics Choice: Pick metrics/filters to visualize.</em>
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <img src="assets/screenshots/statistics.jpg" alt="Statistics" width="260" />
+      <br/>
+      <em>Statistics: Charts displaying study progress.</em>
+    </td>
+    <td>
+      <img src="assets/screenshots/settings.jpg" alt="Settings" width="260" />
+      <br/>
+      <em>Settings: Theme, remove/restore ads, and preferences.</em>
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <img src="assets/screenshots/about.jpg" alt="About" width="260" />
+      <br/>
+      <em>About: App version, developer links, and references.</em>
+    </td>
+    <td></td>
+  </tr>
+  
+</table>
 
 ## Project Structure
 
