@@ -1,6 +1,16 @@
 # Study Journal Pro Mobile
 
+<p align="center">
+  <a href="https://play.google.com/store/apps/details?id=com.studyjournalpromobile" target="_blank" rel="noopener noreferrer" title="Open on Google Play">
+    <img src="assets/app-icon.png" alt="Study Journal Pro App Icon" width="128" />
+  </a>
+</p>
+
 A modern, beautiful, and well-structured mobile app built with React Native (Expo) to help users track their study sessions, take notes, and view progress statistics.
+
+## Google Play
+
+- Download on Google Play: https://play.google.com/store/apps/details?id=com.studyjournalpromobile
 
 ## Features
 
@@ -11,7 +21,35 @@ A modern, beautiful, and well-structured mobile app built with React Native (Exp
 
 ## Screenshots
 
-(Screenshots will appear here when you run the app)
+In‑app screenshots are under `assets/screenshots/`. Listed with titles and short descriptions:
+
+### Home (Study Journal)
+- Main screen with study logs, recent notes, and navigation.
+![Home](assets/screenshots/study-journal.jpg)
+
+### Stopwatch
+- Start/stop session timing; record laps; focus‑friendly timer.
+![Stopwatch](assets/screenshots/stopwatch.jpg)
+
+### Record Detail
+- Details of a single study entry: duration, notes, and edit options.
+![Record Detail](assets/screenshots/record-detail.jpg)
+
+### Statistics Choice
+- Picker to choose the metrics/filters you want to visualize.
+![Statistics Choice](assets/screenshots/statistics-choice.jpg)
+
+### Statistics
+- Charts displaying your study progress.
+![Statistics](assets/screenshots/statistics.jpg)
+
+### Settings
+- Theme (dark/light), remove/restore ads, and app preferences.
+![Settings](assets/screenshots/settings.jpg)
+
+### About
+- App version, developer links, and references.
+![About](assets/screenshots/about.jpg)
 
 ## Project Structure
 
