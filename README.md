@@ -1,10 +1,4 @@
-# Study Journal Pro Mobile
-
-<p align="center">
-  <a href="https://play.google.com/store/apps/details?id=com.studyjournalpromobile" target="_blank" rel="noopener noreferrer" title="Open on Google Play">
-    <img src="assets/app-icon.png" alt="Study Journal Pro App Icon" width="128" />
-  </a>
-</p>
+# Study Journal Pro Mobile <a href="https://play.google.com/store/apps/details?id=com.studyjournalpromobile" title="Open on Google Play"><img src="assets/app-icon.png" alt="Study Journal Pro App Icon" width="64" /></a>
 
 A modern, beautiful, and well-structured mobile app built with React Native (Expo) to help users track their study sessions, take notes, and view progress statistics.
 
@@ -25,31 +19,31 @@ In‑app screenshots are under `assets/screenshots/`. Listed with titles and sho
 
 ### Home (Study Journal)
 - Main screen with study logs, recent notes, and navigation.
-![Home](assets/screenshots/study-journal.jpg)
+<img src="assets/screenshots/study-journal.jpg" alt="Home (Study Journal)" width="320" />
 
 ### Stopwatch
 - Start/stop session timing; record laps; focus‑friendly timer.
-![Stopwatch](assets/screenshots/stopwatch.jpg)
+<img src="assets/screenshots/stopwatch.jpg" alt="Stopwatch" width="320" />
 
 ### Record Detail
 - Details of a single study entry: duration, notes, and edit options.
-![Record Detail](assets/screenshots/record-detail.jpg)
+<img src="assets/screenshots/record-detail.jpg" alt="Record Detail" width="320" />
 
 ### Statistics Choice
 - Picker to choose the metrics/filters you want to visualize.
-![Statistics Choice](assets/screenshots/statistics-choice.jpg)
+<img src="assets/screenshots/statistics-choice.jpg" alt="Statistics Choice" width="320" />
 
 ### Statistics
 - Charts displaying your study progress.
-![Statistics](assets/screenshots/statistics.jpg)
+<img src="assets/screenshots/statistics.jpg" alt="Statistics" width="320" />
 
 ### Settings
 - Theme (dark/light), remove/restore ads, and app preferences.
-![Settings](assets/screenshots/settings.jpg)
+<img src="assets/screenshots/settings.jpg" alt="Settings" width="320" />
 
 ### About
 - App version, developer links, and references.
-![About](assets/screenshots/about.jpg)
+<img src="assets/screenshots/about.jpg" alt="About" width="320" />
 
 ## Project Structure
 
