@@ -15,6 +15,7 @@ import RecordDetailScreen from '../screens/RecordDetailScreen';
 
 // Import theme context
 import { useTheme } from '../context/ThemeContext';
+import CustomTabBar from './CustomTabBar';
 import { useLanguage } from '../context/LanguageContext';
 
 const Tab = createBottomTabNavigator();
@@ -165,6 +166,13 @@ const AppNavigator = () => {
           fontWeight: '500',
         },
       })}
+      tabBar={(props) => (
+        <CustomTabBar
+          {...props}
+          bannerUnitId={'ca-app-pub-3940256099942544/9214589741'}
+          bannerEnabled={true}
+        />
+      )}
     >
       <Tab.Screen name="Stopwatch" component={StopwatchStack} options={{ title: t('nav.stopwatch') }} />
       <Tab.Screen name="Records" component={RecordsStack} options={{ title: t('nav.records') }} />

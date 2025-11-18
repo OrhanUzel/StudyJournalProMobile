@@ -23,20 +23,24 @@
       [
         "react-native-google-mobile-ads",
         {
-          "androidAppId": "ca-app-pub-3940256099942544/9214589741",
-          "iosAppId": "ca-app-pub-3940256099942544/9214589741"
+          "androidAppId": "ca-app-pub-3940256099942544~3347511713",
+          "iosAppId": "ca-app-pub-3940256099942544~1458002511"
         }
-      ]
+      ],
+      "expo-build-properties",
+      ["./app.plugin.js", { "mode": "adjustResize" }],
+      "expo-localization",
+      "expo-sqlite"
     ],
-  "android": {
-    "package": "com.studyjournalpromobile",
-    "adaptiveIcon": {
-      "foregroundImage": "./assets/adaptive-icon.png",
-      "backgroundColor": "#ffffff"
+    "android": {
+      "package": "com.studyjournalpromobile",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "edgeToEdgeEnabled": true
+      
     },
-    "edgeToEdgeEnabled": true,
-    "windowSoftInputMode": "adjustResize"
-  },
     "web": {
       "favicon": "./assets/favicon.png"
     },

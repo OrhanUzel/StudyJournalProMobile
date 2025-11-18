@@ -177,6 +177,9 @@ const tr = {
   'stopwatch.minutes_abbr': 'dk',
   'stopwatch.seconds_abbr': 'sn',
   'stopwatch.centiseconds_abbr': 'cs',
+  // Notifications
+  'notification.stopwatch_ongoing_title': 'Çalışmalarınız devam ediyor',
+  'notification.stopwatch_ongoing_body': 'Uygulamaya dönmek için dokunun',
 };
 
 const en = {
@@ -258,7 +261,7 @@ const en = {
   'settings.onboarding_reset_title': 'Reset Onboarding',
   'settings.onboarding_reset_body': 'The intro tour will be shown on next app start. Continue?',
   'settings.onboarding_reset_success': 'Onboarding reset.',
-  'settings.onboarding_show_now': 'Show onboarding now',
+  'settings.onboarding_show_now': 'Show Onboarding Now',
   // Statistics
   'statistics.title': 'Statistics',
   'statistics.subtitle': 'Track your study progress',
@@ -363,6 +366,9 @@ const en = {
   'stopwatch.minutes_abbr': 'min',
   'stopwatch.seconds_abbr': 'sec',
   'stopwatch.centiseconds_abbr': 'cs',
+  // Notifications
+  'notification.stopwatch_ongoing_title': 'Study in progress',
+  'notification.stopwatch_ongoing_body': 'Tap to return to the app',
 };
 
 export default { tr, en };

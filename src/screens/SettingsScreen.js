@@ -7,6 +7,7 @@ import ConfirmDialog from '../components/ConfirmDialog';
 import { useLanguage } from '../context/LanguageContext';
 import OnboardingScreen from './OnboardingScreen';
 import AdsBanner from '../components/AdsBanner';
+import { isTurkeyRegion } from '../services/RegionService';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import Constants from 'expo-constants';
@@ -117,65 +118,60 @@ const SettingsScreen = () => {
         showsVerticalScrollIndicator={false}
       >
         {/* Top Banner above Ads & Purchases */}
-        <AdsBanner
-          unitId={bannerUnitId}
-          containerStyle={{
-            paddingHorizontal: 8,
-            paddingTop: 8,
-            paddingBottom: 8,
-            marginTop: 8,
-            marginBottom: 12,
-            borderBottomWidth: 1,
-            borderBottomColor: theme.border,
-            backgroundColor: theme.background,
-          }}
-        />
+        {!isTurkeyRegion() && (
+          <AdsBanner
+            unitId={bannerUnitId}
+            containerStyle={{
+              paddingHorizontal: 8,
+              paddingTop: 8,
+              paddingBottom: 8,
+              marginTop: 8,
+              marginBottom: 12,
+              borderBottomWidth: 1,
+              borderBottomColor: theme.border,
+              backgroundColor: theme.background,
+            }}
+          />
+        )}
         {/* Ads & Purchases Section (moved to top) */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: theme.text }]}> 
-            {language === 'en' ? 'Ads & Purchases' : 'Reklamlar ve Satın Alma'}
-          </Text>
-          <View style={[styles.settingCard, { backgroundColor: theme.card, borderColor: theme.border, borderRadius: borderRadius.lg }]}> 
-            <View style={styles.settingRow}>
-              <View style={styles.settingInfo}>
-                <Ionicons name="remove-circle-outline" size={20} color={theme.primary} style={styles.settingIcon} />
-                <Text style={[styles.settingText, { color: theme.text }]}> 
-                  {language === 'en' ? 'Remove Ads' : 'Reklamları Kaldır'}
-                </Text>
-              </View>
-              {adsDisabled ? (
-                <Text style={{ color: theme.successColor, fontWeight: '600' }}>
-                  {language === 'en' ? 'Disabled' : 'Kapalı'}
-                </Text>
-              ) : (
-                <TouchableOpacity
-                  style={[styles.contactButton, { borderColor: theme.border, backgroundColor: 'transparent', paddingVertical: 8, paddingHorizontal: 12 }]}
-                  onPress={handleBuyRemoveAds}
-                  disabled={!iapReady || purchaseLoading}
-                >
-                  <Text style={{ color: theme.primary }}>{product?.price || (language === 'en' ? 'Buy' : 'Satın Al')}</Text>
-                </TouchableOpacity>
-              )}
-            </View>
-            <View style={[styles.divider, { backgroundColor: theme.border }]} />
-            <View style={styles.settingRow}>
-              <View style={styles.settingInfo}>
-                <Ionicons name="refresh-outline" size={20} color={theme.primary} style={styles.settingIcon} />
-                <Text style={[styles.settingText, { color: theme.text }]}> 
-                  {language === 'en' ? 'Restore Purchases' : 'Satın Alımı Geri Yükle'}
-                </Text>
-              </View>
-              <TouchableOpacity
-                style={[styles.contactButton, { borderColor: theme.border, backgroundColor: 'transparent', paddingVertical: 8, paddingHorizontal: 12 }]}
-                onPress={handleRestorePurchases}
-                disabled={!iapReady || restoreLoading}
+        {!isTurkeyRegion() && (
+          <View style={styles.section}>
+            <Text style={[styles.sectionTitle, { color: theme.text }]}> 
+              {language === 'en' ? 'Ads' : 'Reklamlar'}
+            </Text>
+            <View style={[styles.settingCard, { backgroundColor: theme.card, borderColor: theme.border, borderRadius: borderRadius.lg }]}> 
+              <TouchableOpacity 
+                style={styles.settingRow}
+                onPress={adsDisabled ? undefined : handleBuyRemoveAds}
+                disabled={adsDisabled || !iapReady || purchaseLoading}
+                activeOpacity={0.85}
               >
-                <Text style={{ color: theme.primary }}>{language === 'en' ? 'Restore' : 'Geri Yükle'}</Text>
+                <View style={styles.settingInfo}>
+                  <Ionicons name="star" size={22} color={theme.primary} style={styles.settingIcon} />
+                  <Text style={[styles.settingText, { color: theme.text }]}> 
+                    {language === 'en' ? 'Remove Ads' : 'Reklamları Kaldır'}
+                  </Text>
+                </View>
+                {adsDisabled ? (
+                  <Text style={{ color: theme.successColor, fontWeight: '600' }}>
+                    {language === 'en' ? 'Disabled' : 'Kapalı'}
+                  </Text>
+                ) : (
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    {!!product?.price && (
+                      <Text style={{ color: theme.primaryColor, fontWeight: '700', marginRight: 6 }}>
+                        {product.price}
+                      </Text>
+                    )}
+                    <Ionicons name="chevron-forward" size={20} color={theme.textSecondary} />
+                  </View>
+                )}
               </TouchableOpacity>
             </View>
           </View>
-        </View>
+        )}
         {/* Appearance Section */}
+
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: theme.text }]}>
             {t('settings.appearance')}
@@ -515,6 +511,27 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     marginBottom: 8,
     flex: 1,
+  },
+  buyButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 999,
+    minWidth: 130,
+    justifyContent: 'center',
+    shadowOpacity: 0.35,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 4,
+  },
+  buyButtonIcon: {
+    marginRight: 8,
+  },
+  buyButtonText: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+    fontSize: 14,
   },
   // Yeni grid ve kart stilleri
   contactGrid: {

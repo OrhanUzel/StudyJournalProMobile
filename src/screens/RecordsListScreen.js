@@ -142,7 +142,19 @@ const RecordsListScreen = ({ navigation }) => {
           {t('records.subtitle')}
         </Text>
       </View>
-
+ <AdsBanner
+        unitId={bannerUnitId}
+        containerStyle={[
+          styles.bannerContainer,
+          {
+            borderTopColor: theme.border,
+            borderTopWidth: 1,
+            paddingHorizontal: spacing?.sm ?? 8,
+            marginTop: spacing?.sm ?? 8,
+            marginBottom: spacing?.sm ?? 8,
+          },
+        ]}
+      />
       {loading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={theme.primaryColor} />
@@ -184,19 +196,7 @@ const RecordsListScreen = ({ navigation }) => {
         </View>
       )}
 
-      <AdsBanner
-        unitId={bannerUnitId}
-        containerStyle={[
-          styles.bannerContainer,
-          {
-            borderTopColor: theme.border,
-            borderTopWidth: 1,
-            paddingHorizontal: spacing?.sm ?? 8,
-            marginTop: spacing?.sm ?? 8,
-            marginBottom: spacing?.sm ?? 8,
-          },
-        ]}
-      />
+     
 
       <ConfirmDialog
         visible={showDeleteConfirm}

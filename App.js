@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { NavigationContainer } from '@react-navigation/native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -10,8 +10,34 @@ import { requestTrackingPermissionsAsync } from 'expo-tracking-transparency';
 import Constants from 'expo-constants';
 import AppNavigator from './src/navigation/AppNavigator';
 import StopwatchService from './src/services/StopwatchService';
+import NotificationService from './src/services/NotificationService';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import OnboardingScreen from './src/screens/OnboardingScreen';
 
 export default function App() {
+  const [onboardingChecked, setOnboardingChecked] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
+
+  // İlk açılışta onboarding kontrolü
+  useEffect(() => {
+    (async () => {
+      try {
+        const flag = await AsyncStorage.getItem('hasSeenOnboarding');
+        setShowOnboarding(flag !== 'true');
+      } catch {}
+      setOnboardingChecked(true);
+    })();
+  }, []);
+
+  // Bildirim servisini her platformda başlat (Expo Go dahil)
+  useEffect(() => {
+    (async () => {
+      try {
+        await NotificationService.initialize();
+      } catch {}
+    })();
+  }, []);
+
   useEffect(() => {
     // iOS ATT iznini uygulama açılışında iste
     (async () => {
@@ -81,7 +107,11 @@ export default function App() {
           <NotesProvider>
             <NavigationContainer>
               <StatusBar style="auto" />
-              <AppNavigator />
+              {onboardingChecked && showOnboarding ? (
+                <OnboardingScreen onDone={() => setShowOnboarding(false)} />
+              ) : (
+                <AppNavigator />
+              )}
             </NavigationContainer>
           </NotesProvider>
         </ThemeProvider>

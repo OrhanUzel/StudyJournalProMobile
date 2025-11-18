@@ -1,13 +1,14 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import translations from '../i18n/translations';
+import { isTurkeyRegion } from '../services/RegionService';
 
-const LanguageContext = createContext({ language: 'tr', setLanguage: () => {}, t: (key, params) => key });
+const LanguageContext = createContext({ language: 'en', setLanguage: () => {}, t: (key, params) => key });
 
 export const useLanguage = () => useContext(LanguageContext);
 
 export const LanguageProvider = ({ children }) => {
-  const [language, setLanguage] = useState('tr');
+  const [language, setLanguage] = useState('en');
 
   useEffect(() => {
     (async () => {
@@ -15,8 +16,14 @@ export const LanguageProvider = ({ children }) => {
         const stored = await AsyncStorage.getItem('languagePreference');
         if (stored && (stored === 'tr' || stored === 'en')) {
           setLanguage(stored);
+        } else {
+          const inTurkey = isTurkeyRegion();
+          setLanguage(inTurkey ? 'tr' : 'en');
         }
-      } catch {}
+      } catch {
+        const inTurkey = isTurkeyRegion();
+        setLanguage(inTurkey ? 'tr' : 'en');
+      }
     })();
   }, []);
 

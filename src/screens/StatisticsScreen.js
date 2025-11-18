@@ -253,10 +253,25 @@ const StatisticsScreen = () => {
             </>
           )}
         </View>
+        <AdsBanner
+              unitId={bannerUnitId}
+              containerStyle={{
+                paddingHorizontal: spacing.sm,
+                paddingTop: 8,
+                paddingBottom: 8,
+                marginTop: spacing.sm,
+                marginBottom: spacing.sm,
+                borderTopWidth: 1,
+                borderBottomWidth: 1,
+                borderColor: theme.border,
+                backgroundColor: theme.background,
+              }}
+            />
         <View style={[styles.todayRow, { borderColor: theme.border }]}> 
           <Ionicons name="calendar-outline" size={14} color={theme.textSecondary} />
           <Text style={[styles.todayText, { color: theme.textSecondary }]}> {(language === 'en' ? 'Today' : 'Bugün')}: {todayString}</Text>
         </View>
+        
         {stats.length > 0 ? (
           <>
             <ChartCard
@@ -274,20 +289,7 @@ const StatisticsScreen = () => {
               period={activePeriod}
             />
             {/* Banner Ad - özet karttan hemen önce konumlandırıldı */}
-            <AdsBanner
-              unitId={bannerUnitId}
-              containerStyle={{
-                paddingHorizontal: spacing.sm,
-                paddingTop: 8,
-                paddingBottom: 8,
-                marginTop: spacing.sm,
-                marginBottom: spacing.sm,
-                borderTopWidth: 1,
-                borderBottomWidth: 1,
-                borderColor: theme.border,
-                backgroundColor: theme.background,
-              }}
-            />
+            
             <View
               style={[
                 styles.summaryCard,
