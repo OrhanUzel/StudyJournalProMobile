@@ -73,26 +73,37 @@ export default function AdsBanner({ unitId, size, containerStyle }) {
   })();
 
   return (
-    <View
-      style={[
-        {
-          alignSelf: 'stretch',
-          overflow: 'hidden',
-          width: '100%',
-          minHeight: adLoaded ? reservedHeight : 0,
-          height: adLoaded ? undefined : 0,
-          opacity: adLoaded ? 1 : 0,
-        },
-        containerStyle,
-      ]}
-    >
-      <BannerAd
-        unitId={unitId}
-        size={finalSize}
-        requestOptions={{ requestNonPersonalizedAdsOnly: true }}
-        onAdLoaded={() => setAdLoaded(true)}
-        onAdFailedToLoad={() => setAdLoaded(false)}
-      />
+    <View style={{ width: '100%' }}>
+      <View
+        style={[
+          {
+            alignSelf: 'stretch',
+            alignItems: 'center',
+            justifyContent: 'center',
+            overflow: 'hidden',
+            width: '100%',
+            minHeight: reservedHeight,
+          },
+          adLoaded ? containerStyle : null,
+          !adLoaded && {
+            minHeight: 0,
+            height: 0,
+            opacity: 0,
+            marginTop: 0,
+            marginBottom: 0,
+            paddingVertical: 0,
+            paddingHorizontal: 0,
+          },
+        ]}
+      >
+        <BannerAd
+          unitId={unitId}
+          size={finalSize}
+          requestOptions={{ requestNonPersonalizedAdsOnly: true }}
+          onAdLoaded={() => setAdLoaded(true)}
+          onAdFailedToLoad={() => setAdLoaded(false)}
+        />
+      </View>
     </View>
   );
 }
