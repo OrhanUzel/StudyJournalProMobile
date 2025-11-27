@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import translations from '../i18n/translations';
-import { isTurkeyRegion } from '../services/RegionService';
+import { getDefaultLanguage } from '../services/RegionService';
 
 const LanguageContext = createContext({ language: 'en', setLanguage: () => {}, t: (key, params) => key });
 
@@ -14,15 +14,15 @@ export const LanguageProvider = ({ children }) => {
     (async () => {
       try {
         const stored = await AsyncStorage.getItem('languagePreference');
-        if (stored && (stored === 'tr' || stored === 'en')) {
+        if (stored && ['tr','en','ar','es'].includes(stored)) {
           setLanguage(stored);
         } else {
-          const inTurkey = isTurkeyRegion();
-          setLanguage(inTurkey ? 'tr' : 'en');
+          const def = getDefaultLanguage();
+          setLanguage(def);
         }
       } catch {
-        const inTurkey = isTurkeyRegion();
-        setLanguage(inTurkey ? 'tr' : 'en');
+        const def = getDefaultLanguage();
+        setLanguage(def);
       }
     })();
   }, []);
@@ -44,7 +44,6 @@ export const LanguageProvider = ({ children }) => {
     const dict = translations[language] || {};
     let str = dict[key];
     if (str == null) {
-      // Fallback to English, then Turkish, then key
       str = (translations.en && translations.en[key]) || (translations.tr && translations.tr[key]) || key;
     }
     return interpolate(String(str), params);

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Switch, Alert, ScrollView, Linking, Image, Modal, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView, Linking, Image, Modal, Platform, Dimensions } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { useNotes } from '../context/NotesContext';
 import { Ionicons } from '@expo/vector-icons';
@@ -7,27 +7,36 @@ import ConfirmDialog from '../components/ConfirmDialog';
 import { useLanguage } from '../context/LanguageContext';
 import OnboardingScreen from './OnboardingScreen';
 import AdsBanner from '../components/AdsBanner';
+import { getBannerUnitId } from '../config/adMobIds';
 import { isTurkeyRegion } from '../services/RegionService';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
+import { useFocusEffect } from '@react-navigation/native';
 import Constants from 'expo-constants';
-import { initIap, getProducts, buyRemoveAds, restorePurchases, isAdsDisabled } from '../services/InAppPurchaseService';
+import { initIap, getProducts, getSubscriptions, buyRemoveAds, buyPremiumMonthly, buyPremiumYearly, restorePurchases, isAdsDisabled, getPremiumStatus, onPremiumStatusChange } from '../services/InAppPurchaseService';
 
 const SettingsScreen = () => {
-  const { theme, isDarkMode, toggleTheme, spacing, borderRadius } = useTheme();
+  const { theme, isDarkMode, themePreference, setThemePreference, spacing, borderRadius } = useTheme();
   const { clearAllNotes } = useNotes();
   const { t, language, setLanguage } = useLanguage();
   const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
-  const bannerUnitId = 'ca-app-pub-3940256099942544/9214589741';
+  const bannerUnitId = getBannerUnitId();
+  const isNarrow = Dimensions.get('window').width <= 400;
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [showIconsModal, setShowIconsModal] = useState(false);
   const [onboardingVisible, setOnboardingVisible] = useState(false);
   const [adsDisabled, setAdsDisabledState] = useState(false);
   const [iapReady, setIapReady] = useState(false);
   const [product, setProduct] = useState(null);
+  const [lifetimePrice, setLifetimePrice] = useState(null);
+  const [subscription, setSubscription] = useState(null);
+  const [monthlyOffer, setMonthlyOffer] = useState(null);
+  const [yearlyOffer, setYearlyOffer] = useState(null);
   const [purchaseLoading, setPurchaseLoading] = useState(false);
   const [restoreLoading, setRestoreLoading] = useState(false);
+  const [showPlansModal, setShowPlansModal] = useState(false);
+  const [premiumStatus, setPremiumStatus] = useState({ active: false });
 
   useEffect(() => {
     (async () => {
@@ -37,28 +46,104 @@ const SettingsScreen = () => {
         setIapReady(!!ready);
         // On launch, try restore and read flag
         await restorePurchases();
-        const disabled = await isAdsDisabled();
-        setAdsDisabledState(disabled);
+        const status = await getPremiumStatus();
+        setAdsDisabledState(!!status.active);
+        setPremiumStatus(status);
         const products = await getProducts();
-        const p = products?.find((x) => x.productId === 'remove_ads') || products?.[0] || null;
+        const p = products?.find((x) => x.productId === 'premium_lifetime' || x.productId === 'remove_ads_lifetime' || x.productId === 'remove_ads' || x.id === 'premium_lifetime') || products?.[0] || null;
         setProduct(p);
+        try {
+          const lp = p?.displayPrice
+            || p?.oneTimePurchaseOfferDetailsAndroid?.formattedPrice
+            || p?.oneTimePurchaseOfferDetails?.priceFormatted
+            || p?.priceFormatted
+            || null;
+          setLifetimePrice(lp);
+        } catch {}
+        const subs = await getSubscriptions();
+        const s = subs?.[0] || null;
+        setSubscription(s);
+        try {
+          const details = s?.subscriptionOfferDetailsAndroid || s?.subscriptionOfferDetails || [];
+          const findOffer = (base) => details.find((d) => d?.basePlanId === base) || null;
+          const m = findOffer('monthly') || findOffer('monthly-plan');
+          const y = findOffer('yearly') || findOffer('yearly-plan');
+          const firstPhase = (o) => o?.pricingPhases?.pricingPhaseList?.[0] || null;
+          const fmt = (p) => p?.formattedPrice || p?.priceFormatted || null;
+          setMonthlyOffer(m ? { price: fmt(firstPhase(m)) } : null);
+          setYearlyOffer(y ? { price: fmt(firstPhase(y)) } : null);
+        } catch {}
       } else {
-        // In web / Expo Go dev environments, just read flag; skip IAP calls to avoid warnings
         const disabled = await isAdsDisabled();
         setAdsDisabledState(disabled);
+        const status = await getPremiumStatus();
+        setPremiumStatus(status);
       }
     })();
   }, []);
 
-  const handleBuyRemoveAds = async () => {
+  useFocusEffect(
+    React.useCallback(() => {
+      (async () => {
+        const status = await getPremiumStatus();
+        setAdsDisabledState(!!status.active);
+        setPremiumStatus(status);
+      })();
+      return () => {};
+    }, [])
+  );
+
+  useEffect(() => {
+    const off = onPremiumStatusChange((status) => {
+      setAdsDisabledState(!!status?.active);
+      setPremiumStatus(status || { active: false });
+    });
+    return () => { off && off(); };
+  }, []);
+
+  // SettingsScreen.js içinde bu fonksiyonu bul ve güncelle:
+
+const handleBuyRemoveAds = async () => {
     setPurchaseLoading(true);
-    const ok = await buyRemoveAds();
+    
+    // DÜZELTME: Bulduğumuz 'product' objesini veya ID'sini fonksiyona gönderiyoruz.
+    // Eğer product henüz yüklenmediyse null gidebilir, servis içinde default kontrolü ekledim.
+    const ok = await buyRemoveAds(product); 
+    
     setPurchaseLoading(false);
     if (ok) {
       setAdsDisabledState(true);
-      Alert.alert(language === 'en' ? 'Success' : 'Başarılı', language === 'en' ? 'Ads removed.' : 'Reklamlar kaldırıldı.');
+      Alert.alert(t('stopwatch.success'), t('iap.ads_removed'));
     } else {
-      Alert.alert(language === 'en' ? 'Error' : 'Hata', language === 'en' ? 'Purchase failed or unavailable.' : 'Satın alma başarısız veya mevcut değil.');
+      Alert.alert(t('common.error'), t('iap.purchase_failed'));
+    }
+};
+
+  const handleBuyMonthly = async () => {
+    setPurchaseLoading(true);
+    const ok = await buyPremiumMonthly();
+    const status = await getPremiumStatus();
+    setPurchaseLoading(false);
+    setAdsDisabledState(!!status.active);
+    setPremiumStatus(status);
+    if (ok || status.active) {
+      Alert.alert(t('stopwatch.success'), t('iap.premium_enabled'));
+    } else {
+      Alert.alert(t('common.error'), t('iap.subscription_failed'));
+    }
+  };
+
+  const handleBuyYearly = async () => {
+    setPurchaseLoading(true);
+    const ok = await buyPremiumYearly();
+    const status = await getPremiumStatus();
+    setPurchaseLoading(false);
+    setAdsDisabledState(!!status.active);
+    setPremiumStatus(status);
+    if (ok || status.active) {
+      Alert.alert(t('stopwatch.success'), t('iap.premium_enabled'));
+    } else {
+      Alert.alert(t('common.error'), t('iap.subscription_failed'));
     }
   };
 
@@ -68,8 +153,8 @@ const SettingsScreen = () => {
     setRestoreLoading(false);
     setAdsDisabledState(!!ok);
     Alert.alert(
-      language === 'en' ? 'Restore' : 'Geri Yükle',
-      ok ? (language === 'en' ? 'Purchases restored.' : 'Satın alımlar geri yüklendi.') : (language === 'en' ? 'No purchases found.' : 'Satın alım bulunamadı.')
+      t('iap.restore_purchases'),
+      ok ? t('iap.restore_ok') : t('iap.restore_none')
     );
   };
   
@@ -133,39 +218,62 @@ const SettingsScreen = () => {
             }}
           />
         )}
-        {/* Ads & Purchases Section (moved to top) */}
+        {/* Ads & Purchases / Premium Section */}
         {!isTurkeyRegion() && (
           <View style={styles.section}>
             <Text style={[styles.sectionTitle, { color: theme.text }]}> 
-              {language === 'en' ? 'Ads' : 'Reklamlar'}
+              {t('iap.premium_title')}
             </Text>
             <View style={[styles.settingCard, { backgroundColor: theme.card, borderColor: theme.border, borderRadius: borderRadius.lg }]}> 
+              {adsDisabled ? (
+                <View style={[styles.premiumCTA, { borderColor: theme.border, backgroundColor: theme.card }]}> 
+                  <Ionicons name="checkmark-circle-outline" size={24} color={theme.primary} style={{ marginRight: 12 }} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.ctaTitle, { color: theme.text }]}> 
+                      {t('premium.active')}
+                    </Text>
+                    <Text style={[styles.ctaSub, { color: theme.textSecondary }]}> 
+                      {premiumStatus?.type === 'lifetime' ? t('premium.lifetime') : t('premium.subscription')}
+                    </Text>
+                    {!!premiumStatus?.expiryTime && premiumStatus?.type !== 'lifetime' && (
+                      <Text style={[styles.ctaSub, { color: theme.textSecondary }]}> 
+                        {t('premium.valid_until', { date: new Date(Number(premiumStatus.expiryTime)).toLocaleDateString(language === 'en' ? 'en-US' : (language === 'es' ? 'es-ES' : (language === 'ar' ? 'ar' : 'tr-TR'))) })}
+                      </Text>
+                    )}
+                  </View>
+                </View>
+              ) : (
+                <TouchableOpacity
+                  style={[styles.premiumCTA, { borderColor: theme.border, backgroundColor: theme.card }]}
+                  onPress={() => setShowPlansModal(true)}
+                  activeOpacity={0.9}
+                >
+                  <Ionicons name="sparkles-outline" size={24} color={theme.primary} style={{ marginRight: 12 }} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.ctaTitle, { color: theme.text }]}> 
+                      {t('iap.go_premium')}
+                    </Text>
+                    <Text style={[styles.ctaSub, { color: theme.textSecondary }]}> 
+                      {t('iap.ad_free_experience')}
+                    </Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={20} color={theme.textSecondary} />
+                </TouchableOpacity>
+              )}
+
               <TouchableOpacity 
-                style={styles.settingRow}
-                onPress={adsDisabled ? undefined : handleBuyRemoveAds}
-                disabled={adsDisabled || !iapReady || purchaseLoading}
+                style={[styles.settingRow, { borderTopWidth: 1, borderTopColor: theme.border }]}
+                onPress={handleRestorePurchases}
+                disabled={restoreLoading}
                 activeOpacity={0.85}
               >
                 <View style={styles.settingInfo}>
-                  <Ionicons name="star" size={22} color={theme.primary} style={styles.settingIcon} />
+                  <Ionicons name="refresh" size={22} color={theme.primary} style={styles.settingIcon} />
                   <Text style={[styles.settingText, { color: theme.text }]}> 
-                    {language === 'en' ? 'Remove Ads' : 'Reklamları Kaldır'}
+                    {t('iap.restore_purchases')}
                   </Text>
                 </View>
-                {adsDisabled ? (
-                  <Text style={{ color: theme.successColor, fontWeight: '600' }}>
-                    {language === 'en' ? 'Disabled' : 'Kapalı'}
-                  </Text>
-                ) : (
-                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                    {!!product?.price && (
-                      <Text style={{ color: theme.primaryColor, fontWeight: '700', marginRight: 6 }}>
-                        {product.price}
-                      </Text>
-                    )}
-                    <Ionicons name="chevron-forward" size={20} color={theme.textSecondary} />
-                  </View>
-                )}
+                <Ionicons name="chevron-forward" size={20} color={theme.textSecondary} />
               </TouchableOpacity>
             </View>
           </View>
@@ -196,15 +304,47 @@ const SettingsScreen = () => {
                   style={styles.settingIcon}
                 />
                 <Text style={[styles.settingText, { color: theme.text }]}>
-                  {t('settings.dark_mode')}
+                  {t('settings.theme_mode')}
                 </Text>
               </View>
-              <Switch
-                value={isDarkMode}
-                onValueChange={toggleTheme}
-                trackColor={{ false: '#767577', true: theme.primary }}
-                thumbColor="#f4f3f4"
-              />
+            </View>
+            <View style={styles.themeOptionsContainer}>
+              {[
+                { key: 'light', label: t('settings.theme_light'), icon: 'sunny-outline' },
+                { key: 'dark', label: t('settings.theme_dark'), icon: 'moon' },
+                { key: 'system', label: t('settings.theme_system'), icon: 'phone-portrait-outline' },
+              ].map((option) => {
+                const active = themePreference === option.key;
+                return (
+                  <TouchableOpacity
+                    key={option.key}
+                    style={[
+                      styles.themeOption,
+                      {
+                        borderColor: active ? theme.primary : theme.border,
+                        backgroundColor: active ? theme.surface : theme.card,
+                      },
+                    ]}
+                    onPress={() => setThemePreference(option.key)}
+                    activeOpacity={0.9}
+                  >
+                    <Ionicons
+                      name={option.icon}
+                      size={20}
+                      color={active ? theme.primary : theme.textSecondary}
+                      style={{ marginBottom: 4 }}
+                    />
+                    <Text
+                      style={[
+                        styles.themeOptionLabel,
+                        { color: active ? theme.primary : theme.text },
+                      ]}
+                    >
+                      {option.label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
             </View>
             <TouchableOpacity 
               style={styles.settingRow}
@@ -277,6 +417,46 @@ const SettingsScreen = () => {
                 </Text>
               </View>
               {language === 'en' && (
+                <Ionicons name="checkmark" size={20} color={theme.primary} />
+              )}
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={styles.settingRow}
+              onPress={() => setLanguage('es')}
+            >
+              <View style={styles.settingInfo}>
+                <Ionicons 
+                  name="language" 
+                  size={22} 
+                  color={language === 'es' ? theme.primary : theme.textSecondary} 
+                  style={styles.settingIcon}
+                />
+                <Text style={[styles.settingText, { color: theme.text }]}>
+                  {t('settings.lang.es')}
+                </Text>
+              </View>
+              {language === 'es' && (
+                <Ionicons name="checkmark" size={20} color={theme.primary} />
+              )}
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={styles.settingRow}
+              onPress={() => setLanguage('ar')}
+            >
+              <View style={styles.settingInfo}>
+                <Ionicons 
+                  name="language" 
+                  size={22} 
+                  color={language === 'ar' ? theme.primary : theme.textSecondary} 
+                  style={styles.settingIcon}
+                />
+                <Text style={[styles.settingText, { color: theme.text }]}>
+                  {t('settings.lang.ar')}
+                </Text>
+              </View>
+              {language === 'ar' && (
                 <Ionicons name="checkmark" size={20} color={theme.primary} />
               )}
             </TouchableOpacity>
@@ -391,6 +571,127 @@ const SettingsScreen = () => {
         </View>
       </Modal>
 
+      <Modal
+        visible={showPlansModal}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setShowPlansModal(false)}
+      >
+        <View style={{ flex: 1, backgroundColor: theme.background }}>
+          <View style={[styles.header, { borderBottomColor: theme.border }]}> 
+            <Text style={[styles.title, { color: theme.text }]}> 
+              {t('iap.choose_plan_title')}
+            </Text>
+            <Text style={[styles.subtitle, { color: theme.textSecondary }]}> 
+              {t('iap.choose_plan_subtitle')}
+            </Text>
+          </View>
+
+          <ScrollView contentContainerStyle={[styles.content, { paddingTop: 12 }]}> 
+            <View style={styles.premiumGrid}>
+              <TouchableOpacity
+                style={[
+                  styles.premiumCard,
+                  { width: '100%' },
+                  { borderColor: theme.border, backgroundColor: isDarkMode ? '#1b2538' : '#eef2ff' }
+                ]}
+                onPress={adsDisabled ? undefined : async () => { setShowPlansModal(false); await handleBuyMonthly(); }}
+                disabled={adsDisabled || !iapReady || purchaseLoading}
+                activeOpacity={0.9}
+              >
+                <View style={styles.planHeaderRow}>
+                  <Text style={[styles.planEmoji]}>📅</Text>
+                  {!!monthlyOffer?.price && (
+                    <View style={[styles.planBadge, { backgroundColor: isDarkMode ? '#3b82f6' : '#2563eb' }]}>
+                      <Text style={styles.planBadgeText}>{monthlyOffer.price}</Text>
+                    </View>
+                  )}
+                </View>
+                <Text style={[styles.premiumTitle, { color: isDarkMode ? '#e6edf3' : '#0b1220' }]}> 
+                  {t('iap.premium_monthly_title')}
+                </Text>
+                <View style={styles.planFeatures}>
+                  <Text style={[styles.featureItem, { color: isDarkMode ? '#c9d1d9' : '#475569' }]}>• {t('iap.ad_free_experience')}</Text>
+                </View>
+                <View style={[styles.buyButton, { backgroundColor: isDarkMode ? '#3b82f6' : '#2563eb' }]}> 
+                  {/* <Ionicons name="cart-outline" size={18} color="#fff" style={styles.buyButtonIcon} /> */}
+                  <Text style={styles.buyButtonText}>{t('iap.subscribe')}</Text>
+                </View>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.premiumCard,
+                  { width: '100%' },
+                  { borderColor: theme.border, backgroundColor: isDarkMode ? '#1b2e2a' : '#ecfdf5' }
+                ]}
+                onPress={adsDisabled ? undefined : async () => { setShowPlansModal(false); await handleBuyYearly(); }}
+                disabled={adsDisabled || !iapReady || purchaseLoading}
+                activeOpacity={0.9}
+              >
+                <View style={styles.planHeaderRow}>
+                  <Text style={styles.planEmoji}>🏆</Text>
+                  {!!yearlyOffer?.price && (
+                    <View style={[styles.planBadge, { backgroundColor: isDarkMode ? '#22c55e' : '#16a34a' }]}>
+                      <Text style={styles.planBadgeText}>{yearlyOffer.price}</Text>
+                    </View>
+                  )}
+                </View>
+                <Text style={[styles.premiumTitle, { color: isDarkMode ? '#e6edf3' : '#0b1220' }]}> 
+                  {t('iap.premium_yearly_title')}
+                </Text>
+                <View style={styles.planFeatures}>
+                  <Text style={[styles.featureItem, { color: isDarkMode ? '#c9d1d9' : '#475569' }]}>• {t('iap.ad_free_experience')}</Text>
+                </View>
+                <View style={[styles.buyButton, { backgroundColor: isDarkMode ? '#22c55e' : '#16a34a' }]}> 
+                  <Ionicons name="cart-outline" size={18} color="#fff" style={styles.buyButtonIcon} />
+                  <Text style={styles.buyButtonText}>{t('iap.subscribe')}</Text>
+                </View>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.premiumCard,
+                  { width: '100%' },
+                  { borderColor: theme.border, backgroundColor: isDarkMode ? '#2b1d2f' : '#fdf4ff' }
+                ]}
+                onPress={adsDisabled ? undefined : async () => { setShowPlansModal(false); await handleBuyRemoveAds(); }}
+                disabled={adsDisabled || !iapReady || purchaseLoading}
+                activeOpacity={0.9}
+              >
+                <View style={styles.planHeaderRow}>
+                  <Text style={styles.planEmoji}>💎</Text>
+                  {!!lifetimePrice && (
+                    <View style={[styles.planBadge, { backgroundColor: isDarkMode ? '#a855f7' : '#9333ea' }]}>
+                      <Text style={styles.planBadgeText}>{lifetimePrice}</Text>
+                    </View>
+                  )}
+                </View>
+                <Text style={[styles.premiumTitle, { color: isDarkMode ? '#e6edf3' : '#0b1220' }]}> 
+                  {t('iap.remove_ads_lifetime_title')}
+                </Text>
+                <View style={styles.planFeatures}>
+                  <Text style={[styles.featureItem, { color: isDarkMode ? '#c9d1d9' : '#475569' }]}>• {t('iap.one_time_purchase')}</Text>
+                  <Text style={[styles.featureItem, { color: isDarkMode ? '#c9d1d9' : '#475569' }]}>• {t('iap.ad_free_forever')}</Text>
+                </View>
+                <View style={[styles.buyButton, { backgroundColor: isDarkMode ? '#a855f7' : '#9333ea' }]}> 
+                  <Ionicons name="cart-outline" size={18} color="#fff" style={styles.buyButtonIcon} />
+                  <Text style={styles.buyButtonText}>{t('iap.buy')}</Text>
+                </View>
+              </TouchableOpacity>
+            </View>
+
+            <TouchableOpacity
+              style={[styles.buyButton, { backgroundColor: theme.primary, alignSelf: 'center', marginTop: 8 }]}
+              onPress={() => setShowPlansModal(false)}
+              activeOpacity={0.9}
+            >
+              <Text style={styles.buyButtonText}>{t('common.close')}</Text>
+            </TouchableOpacity>
+          </ScrollView>
+        </View>
+      </Modal>
+
       {/* Onboarding Fullscreen Modal */}
       <Modal 
         visible={onboardingVisible} 
@@ -461,6 +762,26 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: 16,
   },
+  themeOptionsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginHorizontal: 4,
+    marginBottom: 8,
+  },
+  themeOption: {
+    flex: 1,
+    borderWidth: 1,
+    borderRadius: 14,
+    paddingVertical: 12,
+    paddingHorizontal: 6,
+    alignItems: 'center',
+    marginHorizontal: 4,
+  },
+  themeOptionLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
   settingInfo: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -470,6 +791,70 @@ const styles = StyleSheet.create({
   },
   settingText: {
     fontSize: 16,
+  },
+  premiumGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    padding: 12,
+    gap: 12,
+  },
+  premiumCard: {
+    borderWidth: 1,
+    borderRadius: 16,
+    paddingVertical: 18,
+    paddingHorizontal: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 3,
+  },
+  planHeaderRow: {
+    width: '100%',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  planEmoji: {
+    fontSize: 28,
+  },
+  planBadge: {
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 999,
+  },
+  planBadgeText: {
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: 13,
+  },
+  premiumTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    marginBottom: 6,
+    textAlign: 'center',
+  },
+  premiumSub: {
+    fontSize: 13,
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  premiumPrice: {
+    fontSize: 14,
+    fontWeight: '700',
+    marginBottom: 12,
+  },
+  planFeatures: {
+    width: '100%',
+    marginTop: 4,
+    marginBottom: 12,
+    gap: 4,
+  },
+  featureItem: {
+    fontSize: 13,
   },
   aboutContent: {
     padding: 16,
@@ -605,6 +990,20 @@ const styles = StyleSheet.create({
   modalCloseText: {
     color: '#FFFFFF',
     fontWeight: '600',
+  },
+  premiumCTA: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+  },
+  ctaTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  ctaSub: {
+    fontSize: 13,
   },
 });
 

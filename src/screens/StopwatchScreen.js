@@ -17,8 +17,12 @@ import { useLanguage } from '../context/LanguageContext';
 import StopwatchService from '../services/StopwatchService';
 import DatabaseService from '../services/DatabaseService';
 import { DailyRecord, LapRecord } from '../models/RecordModels';
+import { isTurkeyRegion } from '../services/RegionService';
+import AdsBanner from '../components/AdsBanner';
+import { getBannerUnitId } from '../config/adMobIds';
 import ConfirmDialog from '../components/ConfirmDialog';
 import Toast from '../components/Toast';
+const bannerUnitId = getBannerUnitId();
 
 // Salise etiketini bağımsız güncelleyen küçük bileşen
 const HundredthsTicker = React.memo(({ isRunning, color, coarseTime }) => {
@@ -386,6 +390,23 @@ const StopwatchScreen = ({ navigation }) => {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
+      
+      {!isTurkeyRegion() && (
+                <AdsBanner
+                  unitId={bannerUnitId}
+                  containerStyle={{
+                    paddingHorizontal: 2,
+                    paddingTop: 1,
+                    paddingBottom: 2,
+                    marginTop: 2,
+                    marginBottom: 2,
+                    borderBottomWidth: 1,
+                    borderBottomColor: theme.border,
+                    backgroundColor: theme.background,
+                  }}
+                />
+              )}
+
       {/* Kronometre Ekranı */}
       <View style={styles.timerContainer}>
       <View style={styles.timerRow}>

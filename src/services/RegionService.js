@@ -33,3 +33,34 @@ export function isTurkeyRegion() {
     return false;
   }
 }
+
+export function getDefaultLanguage() {
+  try {
+    let Localization = null;
+    try {
+      Localization = require('expo-localization');
+    } catch (e) {
+      Localization = null;
+    }
+    if (!Localization) return 'en';
+    const getLocales = Localization.getLocales?.bind(Localization);
+    const locales = typeof getLocales === 'function' ? getLocales() : [];
+    const regionCodes = Array.isArray(locales)
+      ? locales.map((l) => (l?.regionCode || '').toUpperCase()).filter(Boolean)
+      : [];
+    const region = (Localization.region || '').toUpperCase();
+    const code = (regionCodes[0] || region || '').toUpperCase();
+    const arabicRegions = new Set(['PS','AE','SA','IQ','JO','LB','SY','EG','QA','BH','KW','OM','DZ','MA','TN','LY','YE']);
+    const spanishRegions = new Set(['ES','MX','CO','AR','CL','PE','VE','EC','GT','CU','DO','HN','NI','CR','PA','UY','PY','BO','SV','PR']);
+    if (code === 'TR') return 'tr';
+    if (arabicRegions.has(code)) return 'ar';
+    if (spanishRegions.has(code)) return 'es';
+    const locale = (Localization.locale || '').toLowerCase();
+    if (locale.includes('tr') || locale.endsWith('-tr')) return 'tr';
+    if (locale.includes('ar') || locale.endsWith('-ar')) return 'ar';
+    if (locale.includes('es') || locale.endsWith('-es')) return 'es';
+    return 'en';
+  } catch (e) {
+    return 'en';
+  }
+}

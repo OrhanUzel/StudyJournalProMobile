@@ -11,6 +11,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import AdsBanner from '../components/AdsBanner';
 import { InterstitialAd, AdEventType } from 'react-native-google-mobile-ads';
+import { getBannerUnitId, getInterstitialUnitId } from '../config/adMobIds';
+import { isAdsDisabled, onPremiumStatusChange, getPremiumStatus } from '../services/InAppPurchaseService';
 
 /**
  * StatisticsScreen component displays study time statistics
@@ -21,11 +23,13 @@ const StatisticsScreen = () => {
   const { t, language } = useLanguage();
   const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
-  const bannerUnitId = 'ca-app-pub-3940256099942544/9214589741';
-  const interstitialUnitId = 'ca-app-pub-3940256099942544/1033173712';
+  const bannerUnitId = getBannerUnitId();
+  const interstitialUnitId = getInterstitialUnitId();
   const lastInterstitialTsRef = useRef(0);
+  const [adsDisabled, setAdsDisabled] = useState(false);
 
   const showInterstitialIfEligible = (periodKey) => {
+    if (adsDisabled) return;
     if (periodKey === 'week') return;
     const now = Date.now();
     // Basit frekans kısıtlaması (>=90sn aralık)
@@ -60,6 +64,21 @@ const StatisticsScreen = () => {
     { key: 'last_1y', label: t('period.last_1y') },
   ]), [language]);
  
+  useEffect(() => {
+    let off;
+    (async () => {
+      try {
+        const status = await getPremiumStatus();
+        setAdsDisabled(!!status?.active);
+      } catch {
+        const disabled = await isAdsDisabled();
+        setAdsDisabled(!!disabled);
+      }
+    })();
+    off = onPremiumStatusChange((status) => setAdsDisabled(!!status?.active));
+    return () => { off && off(); };
+  }, []);
+
   useEffect(() => {
     const now = new Date();
     let startDate;
@@ -165,12 +184,12 @@ const StatisticsScreen = () => {
 
   const averageStudyTime = calculateAverage();
   const today = new Date();
-  const locale = language === 'en' ? 'en-US' : 'tr-TR';
+  const locale = language === 'en' ? 'en-US' : (language === 'es' ? 'es-ES' : (language === 'ar' ? 'ar' : 'tr-TR'));
   const todayString = today.toLocaleDateString(locale, { day: '2-digit', month: 'long', year: 'numeric' });
 
   const getEmptyMessage = (period) => {
     const now = new Date();
-    const locale = language === 'en' ? 'en-US' : 'tr-TR';
+    const locale = language === 'en' ? 'en-US' : (language === 'es' ? 'es-ES' : (language === 'ar' ? 'ar' : 'tr-TR'));
     if (period === 'week') return t('empty.period.week');
     if (period === 'last_1w') return t('empty.period.last_1w');
     if (period === 'month') {
@@ -187,14 +206,14 @@ const StatisticsScreen = () => {
   };
 
   const getMostStudiedSubject = () => {
-    if (stats.length === 0) return 'N/A';
+    if (stats.length === 0) return t('common.na');
     const subjects = {};
     stats.forEach(session => {
       if (session.subject) {
         subjects[session.subject] = (subjects[session.subject] || 0) + (session.duration || 0);
       }
     });
-    let maxSubject = 'N/A';
+    let maxSubject = t('common.na');
     let maxTime = 0;
     Object.entries(subjects).forEach(([subject, time]) => {
       if (time > maxTime) {
@@ -269,7 +288,7 @@ const StatisticsScreen = () => {
             />
         <View style={[styles.todayRow, { borderColor: theme.border }]}> 
           <Ionicons name="calendar-outline" size={14} color={theme.textSecondary} />
-          <Text style={[styles.todayText, { color: theme.textSecondary }]}> {(language === 'en' ? 'Today' : 'Bugün')}: {todayString}</Text>
+          <Text style={[styles.todayText, { color: theme.textSecondary }]}> {t('common.today')}: {todayString}</Text>
         </View>
         
         {stats.length > 0 ? (

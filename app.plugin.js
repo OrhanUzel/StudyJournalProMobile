@@ -37,6 +37,21 @@ module.exports = function withWindowSoftInputMode(config, props = { mode: 'adjus
   return withAndroidManifest(config, (cfg) => {
     const manifest = cfg.modResults;
     cfg.modResults = setWindowSoftInputMode(manifest, props?.mode);
+
+    try {
+      const appManifest = cfg.modResults?.manifest || {};
+      const usesPermissions = appManifest['uses-permission'] || [];
+      const hasBilling = usesPermissions.some((p) => p?.['$']?.['android:name'] === 'com.android.vending.BILLING');
+      if (!hasBilling) {
+        usesPermissions.push({
+          $: { 'android:name': 'com.android.vending.BILLING' },
+        });
+        appManifest['uses-permission'] = usesPermissions;
+      }
+    } catch (e) {
+      // silent: avoid breaking prebuild
+    }
+
     return cfg;
   });
 };

@@ -2,6 +2,7 @@ import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { BottomTabBar } from '@react-navigation/bottom-tabs';
 import AdsBanner from '../components/AdsBanner';
+import { getBannerUnitId } from '../config/adMobIds';
 import { useTheme } from '../context/ThemeContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -15,7 +16,7 @@ const CustomTabBar = (props) => {
   const insets = useSafeAreaInsets();
   const bannerHeight = 50; // Approx height for BannerAdSize.BANNER
   const {
-    bannerUnitId = 'ca-app-pub-3940256099942544/9214589741',
+    bannerUnitId = getBannerUnitId(),
     bannerEnabled = true,
   } = props;
 
@@ -25,7 +26,6 @@ const CustomTabBar = (props) => {
         <View style={[styles.bannerContainer, { borderTopColor: theme.border }]}> 
           <AdsBanner
             unitId={bannerUnitId}
-            size={'ADAPTIVE_BANNER'}
             containerStyle={{ paddingVertical: 4, width: '100%' }}
           />
         </View>

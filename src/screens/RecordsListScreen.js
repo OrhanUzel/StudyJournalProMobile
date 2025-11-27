@@ -18,6 +18,7 @@ import { useIsFocused } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import AdsBanner from '../components/AdsBanner';
+import { getBannerUnitId } from '../config/adMobIds';
 
 const RecordsListScreen = ({ navigation }) => {
   const { theme, spacing } = useTheme();
@@ -29,7 +30,7 @@ const RecordsListScreen = ({ navigation }) => {
   const isFocused = useIsFocused();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [recordToDelete, setRecordToDelete] = useState(null);
-  const bannerUnitId = 'ca-app-pub-3940256099942544/9214589741';
+  const bannerUnitId = getBannerUnitId();
 
   // Kayıtları yükle
   const loadRecords = async () => {

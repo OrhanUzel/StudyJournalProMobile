@@ -1,4 +1,5 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
+import { useColorScheme } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import theme from '../theme/theme';
 
@@ -10,10 +11,12 @@ export const useTheme = () => useContext(ThemeContext);
 
 // Theme provider component
 export const ThemeProvider = ({ children }) => {
-  // State for dark mode
-  const [isDarkMode, setIsDarkMode] = useState(true);
-  
-  // Get current theme based on mode
+  const systemScheme = useColorScheme();
+  const normalizedScheme = systemScheme || 'light';
+  const [themePreference, setThemePreference] = useState('system');
+  const isDarkMode =
+    themePreference === 'dark' ||
+    (themePreference === 'system' && normalizedScheme === 'dark');
   const palette = isDarkMode ? theme.dark : theme.light;
 
   // Aliases to keep backward-compatibility across screens
@@ -38,8 +41,10 @@ export const ThemeProvider = ({ children }) => {
     const loadThemePreference = async () => {
       try {
         const storedTheme = await AsyncStorage.getItem('themePreference');
-        if (storedTheme !== null) {
-          setIsDarkMode(storedTheme === 'dark');
+        if (storedTheme === 'light' || storedTheme === 'dark' || storedTheme === 'system') {
+          setThemePreference(storedTheme);
+        } else {
+          setThemePreference('system');
         }
       } catch (error) {
         console.error('Error loading theme preference:', error);
@@ -53,23 +58,25 @@ export const ThemeProvider = ({ children }) => {
   useEffect(() => {
     const saveThemePreference = async () => {
       try {
-        await AsyncStorage.setItem('themePreference', isDarkMode ? 'dark' : 'light');
+        await AsyncStorage.setItem('themePreference', themePreference);
       } catch (error) {
         console.error('Error saving theme preference:', error);
       }
     };
     
     saveThemePreference();
-  }, [isDarkMode]);
+  }, [themePreference]);
   
   // Toggle theme function
   const toggleTheme = () => {
-    setIsDarkMode(prev => !prev);
+    setThemePreference(prev => (prev === 'dark' ? 'light' : 'dark'));
   };
   
   // Context value
   const value = {
     isDarkMode,
+    themePreference,
+    setThemePreference,
     toggleTheme,
     theme: normalizedTheme,
     spacing: theme.spacing,

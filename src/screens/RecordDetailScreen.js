@@ -16,6 +16,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import AdsBanner from '../components/AdsBanner';
+import { getBannerUnitId } from '../config/adMobIds';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import Toast from '../components/Toast';
@@ -30,7 +31,7 @@ const RecordDetailScreen = ({ route, navigation }) => {
   const { t, language } = useLanguage();
   const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
-  const bannerUnitId = 'ca-app-pub-3940256099942544/9214589741';
+  const bannerUnitId = getBannerUnitId();
   const [record, setRecord] = useState(null);
   const [loading, setLoading] = useState(true);
   const [dailyNote, setDailyNote] = useState('');
@@ -218,7 +219,7 @@ const RecordDetailScreen = ({ route, navigation }) => {
   // Tarih formatla (gün alanını yerel zamanla yorumla)
   const formatDate = (dateString) => {
     const date = new Date(`${dateString}T00:00:00`);
-    const locale = language === 'en' ? 'en-US' : 'tr-TR';
+    const locale = language === 'en' ? 'en-US' : (language === 'es' ? 'es-ES' : (language === 'ar' ? 'ar' : 'tr-TR'));
     return date.toLocaleDateString(locale, {
       year: 'numeric',
       month: 'long',

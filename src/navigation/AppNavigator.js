@@ -16,6 +16,7 @@ import RecordDetailScreen from '../screens/RecordDetailScreen';
 // Import theme context
 import { useTheme } from '../context/ThemeContext';
 import CustomTabBar from './CustomTabBar';
+import { getBannerUnitId } from '../config/adMobIds';
 import { useLanguage } from '../context/LanguageContext';
 
 const Tab = createBottomTabNavigator();
@@ -169,7 +170,7 @@ const AppNavigator = () => {
       tabBar={(props) => (
         <CustomTabBar
           {...props}
-          bannerUnitId={'ca-app-pub-3940256099942544/9214589741'}
+          bannerUnitId={getBannerUnitId()}
           bannerEnabled={true}
         />
       )}

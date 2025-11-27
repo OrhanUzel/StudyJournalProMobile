@@ -8,6 +8,7 @@ import ConfirmDialog from '../components/ConfirmDialog';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import AdsBanner from '../components/AdsBanner';
+import { getBannerUnitId } from '../config/adMobIds';
 
 /**
  * HomeScreen component displays the list of notes and provides navigation to add new notes
@@ -61,7 +62,7 @@ const HomeScreen = ({ navigation }) => {
 
   const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
-  const bannerUnitId = 'ca-app-pub-3940256099942544/9214589741';
+  const bannerUnitId = getBannerUnitId();
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
