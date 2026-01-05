@@ -8,10 +8,11 @@ import { useLanguage } from '../context/LanguageContext';
 import OnboardingScreen from './OnboardingScreen';
 import AdsBanner from '../components/AdsBanner';
 import { getBannerUnitId } from '../config/adMobIds';
+import { getPlanConfig } from '../config/iap';
 import { isTurkeyRegion } from '../services/RegionService';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useRoute, useNavigation } from '@react-navigation/native';
 import Constants from 'expo-constants';
 import { initIap, getProducts, getSubscriptions, buyRemoveAds, buyPremiumMonthly, buyPremiumYearly, restorePurchases, isAdsDisabled, getPremiumStatus, onPremiumStatusChange } from '../services/InAppPurchaseService';
 
@@ -23,6 +24,8 @@ const SettingsScreen = () => {
   const tabBarHeight = useBottomTabBarHeight();
   const bannerUnitId = getBannerUnitId();
   const isNarrow = Dimensions.get('window').width <= 400;
+  const route = useRoute();
+  const navigation = useNavigation();
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [showIconsModal, setShowIconsModal] = useState(false);
   const [onboardingVisible, setOnboardingVisible] = useState(false);
@@ -40,7 +43,7 @@ const SettingsScreen = () => {
 
   useEffect(() => {
     (async () => {
-      const isSupported = Platform.OS === 'android' && Constants?.appOwnership !== 'expo';
+      const isSupported = (Platform.OS === 'android' || Platform.OS === 'ios') && Constants?.appOwnership !== 'expo';
       if (isSupported) {
         const ready = await initIap();
         setIapReady(!!ready);
@@ -50,7 +53,7 @@ const SettingsScreen = () => {
         setAdsDisabledState(!!status.active);
         setPremiumStatus(status);
         const products = await getProducts();
-        const p = products?.find((x) => x.productId === 'premium_lifetime' || x.productId === 'remove_ads_lifetime' || x.productId === 'remove_ads' || x.id === 'premium_lifetime') || products?.[0] || null;
+        const p = products?.find((x) => x.productId === 'premium_lifetime' || x.productId === 'lifetime_premium' || x.productId === 'remove_ads_lifetime' || x.productId === 'remove_ads' || x.id === 'premium_lifetime' || x.id === 'lifetime_premium') || products?.[0] || null;
         setProduct(p);
         try {
           const lp = p?.displayPrice
@@ -64,14 +67,26 @@ const SettingsScreen = () => {
         const s = subs?.[0] || null;
         setSubscription(s);
         try {
-          const details = s?.subscriptionOfferDetailsAndroid || s?.subscriptionOfferDetails || [];
-          const findOffer = (base) => details.find((d) => d?.basePlanId === base) || null;
-          const m = findOffer('monthly') || findOffer('monthly-plan');
-          const y = findOffer('yearly') || findOffer('yearly-plan');
-          const firstPhase = (o) => o?.pricingPhases?.pricingPhaseList?.[0] || null;
-          const fmt = (p) => p?.formattedPrice || p?.priceFormatted || null;
-          setMonthlyOffer(m ? { price: fmt(firstPhase(m)) } : null);
-          setYearlyOffer(y ? { price: fmt(firstPhase(y)) } : null);
+          if (Platform.OS === 'android') {
+            const details = s?.subscriptionOfferDetailsAndroid || s?.subscriptionOfferDetails || [];
+            const findOffer = (base) => details.find((d) => d?.basePlanId === base) || null;
+            const m = findOffer('monthly') || findOffer('monthly-plan');
+            const y = findOffer('yearly') || findOffer('yearly-plan');
+            const firstPhase = (o) => o?.pricingPhases?.pricingPhaseList?.[0] || null;
+            const fmt = (p) => p?.formattedPrice || p?.priceFormatted || null;
+            setMonthlyOffer(m ? { price: fmt(firstPhase(m)) } : null);
+            setYearlyOffer(y ? { price: fmt(firstPhase(y)) } : null);
+          } else {
+            const monthlyCfg = getPlanConfig('monthly');
+            const yearlyCfg = getPlanConfig('yearly');
+            const matchSku = (item, sku) => (item?.productId || item?.id || item?.sku) === sku;
+            const findBySku = (sku) => Array.isArray(subs) ? subs.find((it) => matchSku(it, sku)) : null;
+            const fmtIOS = (it) => it?.localizedPrice || it?.priceFormatted || it?.priceString || it?.displayPrice || (it?.price ? String(it.price) : null);
+            const mItem = monthlyCfg?.sku ? findBySku(monthlyCfg.sku) : (subs?.[0] || null);
+            const yItem = yearlyCfg?.sku ? findBySku(yearlyCfg.sku) : (subs?.[1] || null);
+            setMonthlyOffer(mItem ? { price: fmtIOS(mItem) } : null);
+            setYearlyOffer(yItem ? { price: fmtIOS(yItem) } : null);
+          }
         } catch {}
       } else {
         const disabled = await isAdsDisabled();
@@ -81,6 +96,13 @@ const SettingsScreen = () => {
       }
     })();
   }, []);
+
+  useEffect(() => {
+    const params = route?.params || {};
+    if (params.openPlans) {
+      setShowPlansModal(true);
+    }
+  }, [route?.params]);
 
   useFocusEffect(
     React.useCallback(() => {
@@ -167,14 +189,14 @@ const handleBuyRemoveAds = async () => {
     linkedin: 'https://www.linkedin.com/in/orhanuzel/',
     mail: 'mailto:orhanuzel@yahoo.com',
     coffee: 'https://buymeacoffee.com/orhanuzel',
+    privacy: 'https://orhanuzel.github.io/Study-Journal-Pro-Privacy-Policy/',
+    terms: 'https://www.apple.com/legal/internet-services/itunes/dev/stdeula/',
   };
 
   // 2x2 grid için asset tabanlı iletişim öğeleri
   const CONTACT_ITEMS = [
-    { key: 'github', label: t('common.github'), url: DEV_LINKS.github, icon: require('../../assets/github32.png') },
     { key: 'linkedin', label: t('common.linkedin'), url: DEV_LINKS.linkedin, icon: require('../../assets/linkedin.png') },
     { key: 'mail', label: t('common.mail'), url: DEV_LINKS.mail, icon: require('../../assets/mail32.png') },
-    { key: 'coffee', label: t('common.buy_me_a_coffee'), url: DEV_LINKS.coffee, icon: require('../../assets/bmc-logo-yellow2.png') },
   ];
 
   const ContactButton = ({ item }) => (
@@ -191,7 +213,7 @@ const handleBuyRemoveAds = async () => {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
-      <View style={[styles.header, { borderBottomColor: theme.border }]}>
+      <View style={[styles.header, { borderBottomColor: theme.border, paddingTop: insets.top + 16 }]}>
         <Text style={[styles.title, { color: theme.text }]}>{t('settings.title')}</Text>
         <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
           {t('settings.subtitle')}
@@ -219,7 +241,7 @@ const handleBuyRemoveAds = async () => {
           />
         )}
         {/* Ads & Purchases / Premium Section */}
-        {!isTurkeyRegion() && (
+        {!isTurkeyRegion() && Platform.OS !== 'ios' && (
           <View style={styles.section}>
             <Text style={[styles.sectionTitle, { color: theme.text }]}> 
               {t('iap.premium_title')}
@@ -521,7 +543,57 @@ const handleBuyRemoveAds = async () => {
         </View>
       </View>
 
-      
+      <View style={styles.section}>
+        <Text style={[styles.sectionTitle, { color: theme.text }]}> 
+          {t('settings.legal')}
+        </Text>
+        <View
+          style={[
+            styles.settingCard,
+            {
+              backgroundColor: theme.card,
+              borderColor: theme.border,
+              borderRadius: borderRadius.lg,
+            }
+          ]}
+        >
+          <TouchableOpacity 
+            style={styles.settingRow}
+            onPress={() => Linking.openURL(DEV_LINKS.privacy)}
+          >
+            <View style={styles.settingInfo}>
+              <Ionicons 
+                name="shield-checkmark" 
+                size={22} 
+                color={theme.primary} 
+                style={styles.settingIcon}
+              />
+              <Text style={[styles.settingText, { color: theme.text }]}> 
+                {t('settings.privacy_policy')}
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color={theme.textSecondary} />
+          </TouchableOpacity>
+
+          <TouchableOpacity 
+            style={styles.settingRow}
+            onPress={() => Linking.openURL(DEV_LINKS.terms)}
+          >
+            <View style={styles.settingInfo}>
+              <Ionicons 
+                name="document-text-outline" 
+                size={22} 
+                color={theme.primary} 
+                style={styles.settingIcon}
+              />
+              <Text style={[styles.settingText, { color: theme.text }]}> 
+                {t('settings.terms_of_use')}
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color={theme.textSecondary} />
+          </TouchableOpacity>
+        </View>
+      </View>
 
       </ScrollView>
 
@@ -543,12 +615,7 @@ const handleBuyRemoveAds = async () => {
                   <Text style={[styles.attrText, { color: theme.primary }]}>Email icons created by ChilliColor - Flaticon</Text>
                 </TouchableOpacity>
               </View>
-              <View style={styles.attrItem}>
-                <Image source={require('../../assets/github32.png')} style={styles.attrIcon} />
-                <TouchableOpacity onPress={() => Linking.openURL('https://www.flaticon.com/free-icons/github')}>
-                  <Text style={[styles.attrText, { color: theme.primary }]}>GitHub icons created by Ruslan Babkin - Flaticon</Text>
-                </TouchableOpacity>
-              </View>
+              
               <View style={styles.attrItem}>
                 <Image source={require('../../assets/linkedin.png')} style={styles.attrIcon} />
                 <TouchableOpacity onPress={() => Linking.openURL('https://www.flaticon.com/free-icons/linkedin')}>
@@ -556,12 +623,7 @@ const handleBuyRemoveAds = async () => {
                 </TouchableOpacity>
               </View>
              
-              <View style={styles.attrItem}>
-                <Image source={require('../../assets/bmc-logo-yellow2.png')} style={styles.attrIcon} />
-                <TouchableOpacity onPress={() => Linking.openURL('https://www.buymeacoffee.com')}>
-                  <Text style={[styles.attrText, { color: theme.primary }]}>Buy Me a Coffee logo</Text>
-                </TouchableOpacity>
-              </View>
+              
             
             </ScrollView>
             <TouchableOpacity style={[styles.modalCloseBtn, { backgroundColor: theme.primary }]} onPress={() => setShowIconsModal(false)}>
@@ -569,15 +631,19 @@ const handleBuyRemoveAds = async () => {
             </TouchableOpacity>
           </View>
         </View>
+
+        
       </Modal>
 
       <Modal
         visible={showPlansModal}
         animationType="slide"
-        presentationStyle="pageSheet"
+        presentationStyle={Platform.OS === 'ios' ? 'pageSheet' : undefined}
+        transparent={Platform.OS !== 'ios'}
         onRequestClose={() => setShowPlansModal(false)}
       >
-        <View style={{ flex: 1, backgroundColor: theme.background }}>
+        <View style={Platform.OS === 'ios' ? { flex: 1, backgroundColor: theme.background } : styles.modalBackdrop}>
+          <View style={Platform.OS === 'ios' ? { flex: 1 } : [styles.modalContent, { backgroundColor: theme.background, borderColor: theme.border, borderRadius: borderRadius.lg, padding: 0, overflow: 'hidden', maxHeight: '94%' }]}>
           <View style={[styles.header, { borderBottomColor: theme.border }]}> 
             <Text style={[styles.title, { color: theme.text }]}> 
               {t('iap.choose_plan_title')}
@@ -600,24 +666,41 @@ const handleBuyRemoveAds = async () => {
                 activeOpacity={0.9}
               >
                 <View style={styles.planHeaderRow}>
-                  <Text style={[styles.planEmoji]}>📅</Text>
+                  <Ionicons name="calendar-outline" size={24} color={isDarkMode ? '#3b82f6' : '#2563eb'} />
                   {!!monthlyOffer?.price && (
                     <View style={[styles.planBadge, { backgroundColor: isDarkMode ? '#3b82f6' : '#2563eb' }]}>
                       <Text style={styles.planBadgeText}>{monthlyOffer.price}</Text>
                     </View>
                   )}
                 </View>
-                <Text style={[styles.premiumTitle, { color: isDarkMode ? '#e6edf3' : '#0b1220' }]}> 
-                  {t('iap.premium_monthly_title')}
-                </Text>
-                <View style={styles.planFeatures}>
-                  <Text style={[styles.featureItem, { color: isDarkMode ? '#c9d1d9' : '#475569' }]}>• {t('iap.ad_free_experience')}</Text>
+              <Text style={[styles.premiumTitle, { color: isDarkMode ? '#e6edf3' : '#0b1220' }]}> 
+                {t('iap.premium_monthly_title')}
+              </Text>
+              <View style={styles.planFeatures}>
+                <Text style={[styles.featureItem, { color: isDarkMode ? '#c9d1d9' : '#475569' }]}>• {t('iap.ad_free_experience')}</Text>
+                <Text style={[styles.featureItem, { color: isDarkMode ? '#c9d1d9' : '#475569' }]}>• {t('iap.all_premium_features')}</Text>
+              </View>
+              <View style={styles.infoRow}>
+                <Text style={[styles.infoText, { color: isDarkMode ? '#c9d1d9' : '#475569' }]}>• {t('iap.length_month')}</Text>
+              </View>
+              {!!monthlyOffer?.price && (
+                <View style={styles.infoRow}>
+                  <Text style={[styles.infoText, { color: isDarkMode ? '#c9d1d9' : '#475569' }]}>• {t('iap.price_per_unit_month', { price: monthlyOffer.price })}</Text>
                 </View>
-                <View style={[styles.buyButton, { backgroundColor: isDarkMode ? '#3b82f6' : '#2563eb' }]}> 
-                  {/* <Ionicons name="cart-outline" size={18} color="#fff" style={styles.buyButtonIcon} /> */}
-                  <Text style={styles.buyButtonText}>{t('iap.subscribe')}</Text>
-                </View>
-              </TouchableOpacity>
+              )}
+              <View style={styles.linksRow}>
+                <TouchableOpacity onPress={() => Linking.openURL(DEV_LINKS.privacy)}>
+                  <Text style={[styles.legalLink, { color: isDarkMode ? '#3b82f6' : '#2563eb' }]}>{t('settings.privacy_policy')}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => Linking.openURL(DEV_LINKS.terms)}>
+                  <Text style={[styles.legalLink, { color: isDarkMode ? '#3b82f6' : '#2563eb' }]}>{t('settings.terms_of_use')}</Text>
+                </TouchableOpacity>
+              </View>
+              <View style={[styles.buyButton, { backgroundColor: isDarkMode ? '#3b82f6' : '#2563eb', marginTop: 8 }]}> 
+                {/* <Ionicons name="cart-outline" size={18} color="#fff" style={styles.buyButtonIcon} /> */}
+                <Text style={styles.buyButtonText}>{t('iap.subscribe')}</Text>
+              </View>
+            </TouchableOpacity>
 
               <TouchableOpacity
                 style={[
@@ -637,17 +720,34 @@ const handleBuyRemoveAds = async () => {
                     </View>
                   )}
                 </View>
-                <Text style={[styles.premiumTitle, { color: isDarkMode ? '#e6edf3' : '#0b1220' }]}> 
-                  {t('iap.premium_yearly_title')}
-                </Text>
-                <View style={styles.planFeatures}>
+              <Text style={[styles.premiumTitle, { color: isDarkMode ? '#e6edf3' : '#0b1220' }]}> 
+                {t('iap.premium_yearly_title')}
+              </Text>
+              <View style={styles.planFeatures}>
                   <Text style={[styles.featureItem, { color: isDarkMode ? '#c9d1d9' : '#475569' }]}>• {t('iap.ad_free_experience')}</Text>
+                  <Text style={[styles.featureItem, { color: isDarkMode ? '#c9d1d9' : '#475569' }]}>• {t('iap.all_premium_features')}</Text>
+              </View>
+              <View style={styles.infoRow}>
+                <Text style={[styles.infoText, { color: isDarkMode ? '#c9d1d9' : '#475569' }]}>• {t('iap.length_year')}</Text>
+              </View>
+              {!!yearlyOffer?.price && (
+                <View style={styles.infoRow}>
+                  <Text style={[styles.infoText, { color: isDarkMode ? '#c9d1d9' : '#475569' }]}>• {t('iap.price_per_unit_year', { price: yearlyOffer.price })}</Text>
                 </View>
-                <View style={[styles.buyButton, { backgroundColor: isDarkMode ? '#22c55e' : '#16a34a' }]}> 
-                  <Ionicons name="cart-outline" size={18} color="#fff" style={styles.buyButtonIcon} />
-                  <Text style={styles.buyButtonText}>{t('iap.subscribe')}</Text>
-                </View>
-              </TouchableOpacity>
+              )}
+              <View style={styles.linksRow}>
+                <TouchableOpacity onPress={() => Linking.openURL(DEV_LINKS.privacy)}>
+                  <Text style={[styles.legalLink, { color: isDarkMode ? '#22c55e' : '#16a34a' }]}>{t('settings.privacy_policy')}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => Linking.openURL(DEV_LINKS.terms)}>
+                  <Text style={[styles.legalLink, { color: isDarkMode ? '#22c55e' : '#16a34a' }]}>{t('settings.terms_of_use')}</Text>
+                </TouchableOpacity>
+              </View>
+              <View style={[styles.buyButton, { backgroundColor: isDarkMode ? '#22c55e' : '#16a34a', marginTop: 8 }]}> 
+                <Ionicons name="cart-outline" size={18} color="#fff" style={styles.buyButtonIcon} />
+                <Text style={styles.buyButtonText}>{t('iap.subscribe')}</Text>
+              </View>
+            </TouchableOpacity>
 
               <TouchableOpacity
                 style={[
@@ -670,25 +770,43 @@ const handleBuyRemoveAds = async () => {
                 <Text style={[styles.premiumTitle, { color: isDarkMode ? '#e6edf3' : '#0b1220' }]}> 
                   {t('iap.remove_ads_lifetime_title')}
                 </Text>
-                <View style={styles.planFeatures}>
-                  <Text style={[styles.featureItem, { color: isDarkMode ? '#c9d1d9' : '#475569' }]}>• {t('iap.one_time_purchase')}</Text>
-                  <Text style={[styles.featureItem, { color: isDarkMode ? '#c9d1d9' : '#475569' }]}>• {t('iap.ad_free_forever')}</Text>
+              <View style={styles.planFeatures}>
+                <Text style={[styles.featureItem, { color: isDarkMode ? '#c9d1d9' : '#475569' }]}>• {t('iap.one_time_purchase')}</Text>
+                <Text style={[styles.featureItem, { color: isDarkMode ? '#c9d1d9' : '#475569' }]}>• {t('iap.ad_free_forever')}</Text>
+                <Text style={[styles.featureItem, { color: isDarkMode ? '#c9d1d9' : '#475569' }]}>• {t('iap.all_premium_features')}</Text>
+              </View>
+              <View style={styles.infoRow}>
+                <Text style={[styles.infoText, { color: isDarkMode ? '#c9d1d9' : '#475569' }]}>• {t('iap.length_lifetime')}</Text>
+              </View>
+              {!!lifetimePrice && (
+                <View style={styles.infoRow}>
+                  <Text style={[styles.infoText, { color: isDarkMode ? '#c9d1d9' : '#475569' }]}>• {t('iap.price_one_time', { price: lifetimePrice })}</Text>
                 </View>
-                <View style={[styles.buyButton, { backgroundColor: isDarkMode ? '#a855f7' : '#9333ea' }]}> 
+              )}
+              <View style={styles.linksRow}>
+                <TouchableOpacity onPress={() => Linking.openURL(DEV_LINKS.privacy)}>
+                  <Text style={[styles.legalLink, { color: isDarkMode ? '#a855f7' : '#9333ea' }]}>{t('settings.privacy_policy')}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => Linking.openURL(DEV_LINKS.terms)}>
+                  <Text style={[styles.legalLink, { color: isDarkMode ? '#a855f7' : '#9333ea' }]}>{t('settings.terms_of_use')}</Text>
+                </TouchableOpacity>
+              </View>
+                <View style={[styles.buyButton, { backgroundColor: isDarkMode ? '#a855f7' : '#9333ea', marginTop: 8 }]}> 
                   <Ionicons name="cart-outline" size={18} color="#fff" style={styles.buyButtonIcon} />
                   <Text style={styles.buyButtonText}>{t('iap.buy')}</Text>
                 </View>
               </TouchableOpacity>
             </View>
 
-            <TouchableOpacity
-              style={[styles.buyButton, { backgroundColor: theme.primary, alignSelf: 'center', marginTop: 8 }]}
-              onPress={() => setShowPlansModal(false)}
-              activeOpacity={0.9}
-            >
-              <Text style={styles.buyButtonText}>{t('common.close')}</Text>
-            </TouchableOpacity>
-          </ScrollView>
+              <TouchableOpacity
+                style={[styles.buyButton, { backgroundColor: theme.primary, alignSelf: 'center', marginTop: 8 }]}
+                onPress={() => setShowPlansModal(false)}
+                activeOpacity={0.9}
+              >
+                <Text style={styles.buyButtonText}>{t('common.close')}</Text>
+              </TouchableOpacity>
+            </ScrollView>
+          </View>
         </View>
       </Modal>
 
@@ -727,7 +845,7 @@ const styles = StyleSheet.create({
   },
   header: {
     padding: 16,
-    paddingTop: 60,
+    paddingTop: 16,
     borderBottomWidth: 1,
   },
   title: {
@@ -852,9 +970,11 @@ const styles = StyleSheet.create({
     marginTop: 4,
     marginBottom: 12,
     gap: 4,
+    alignItems: 'center',
   },
   featureItem: {
     fontSize: 13,
+    textAlign: 'center',
   },
   aboutContent: {
     padding: 16,
@@ -1004,6 +1124,35 @@ const styles = StyleSheet.create({
   },
   ctaSub: {
     fontSize: 13,
+  },
+  legalFooter: {
+    borderTopWidth: 1,
+    marginTop: 16,
+    paddingTop: 12,
+  },
+  legalTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    marginBottom: 8,
+  },
+  infoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 6,
+  },
+  infoText: {
+    fontSize: 13,
+  },
+  linksRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 18,
+    marginTop: 8,
+  },
+  legalLink: {
+    fontSize: 13,
+    textDecorationLine: 'underline',
   },
 });
 

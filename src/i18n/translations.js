@@ -9,7 +9,7 @@ const tr = {
 
   // App display names
   'app.name': 'Çalışma Günlüğüm',
-  'app.name.en': 'Study Journal Pro',
+  'app.name.en': 'Study Tracker Plus',
 
   // Home
   'home.title': 'Çalışma Günlüğüm',
@@ -32,11 +32,11 @@ const tr = {
   'settings.data': 'Veri Yönetimi',
   'settings.clear_all_notes': 'Tüm Notları Temizle',
   'settings.about': 'Hakkında',
-  'settings.app_name': 'Study Journal Pro',
+  'settings.app_name': 'Study Tracker Plus',
   'settings.version': 'Sürüm 1.0.0',
   //'settings.description': 'Çalışma seanslarını takip etmek, not almak ve istatistikleri görüntülemek için minimal bir uygulama.',
   'settings.description': 'Çalışma Günlüğüm Pro, zamanı en verimli şekilde yönetmeniz için tasarlanmış modern bir çalışma günlüğü uygulamasıdır. Sade, şık ve reklamsız arayüzü sayesinde dikkat dağıtmadan odaklanabilir, tur sürelerinizi kolayca kaydedebilirsiniz. Her bir çalışma turunuz için farklı notlar atayabilir bu notları sonrasında değiştirebilir veya silebilirsiniz. Kayıt ettiğiniz çalışmalarınızı yerel bilgisayarınızda sorunsuz bir şekilde saklayabilirsiniz. Saklanan çalışma günlüklerinizi uygulamamız sayesinde görüntüleyebilirsiniz. Basitliği, işlevselliği ve modern tasarımı bir araya getiren Çalışma Günlüğüm Pro uygulaması, çalışma hayatınıza değer katar.',
-  'settings.copyright': '© 2025 Study Journal Pro',
+  'settings.copyright': '© 2025 Study Tracker Plus',
   'settings.language': 'Dil',
   'settings.select_language': 'Dil seçimi',
   'settings.lang.tr': 'Türkçe',
@@ -50,7 +50,11 @@ const tr = {
   'common.buy_me_a_coffee': 'Buy me a coffee',
   'settings.icons_refs_link': 'Uygulamada kullanılan ikon ve referanslar',
   'settings.icons_refs_title': 'Uygulamada Kullanılan İkonlar ve Referanslar',
+  'settings.legal': 'Yasal',
+  'settings.privacy_policy': 'Gizlilik Politikası',
+  'settings.terms_of_use': 'Kullanım Koşulları',
   'common.close': 'Kapat',
+  'iap.calendar_premium_message': 'Takvimde tarih seçimi ve kayıt filtreleme premium özelliktir. Bu özelliğe erişmek için premium olmak ister misiniz?',
   // Onboarding
   'onboarding.title1': 'Kronometre ile çalışmanı başlat',
   'onboarding.body1': 'Zamanlayıcıyı başlat/durdur ve turlarla seanslarını kaydet.',
@@ -128,7 +132,11 @@ const tr = {
   'records.subtitle': 'Çalışmalarını yönet ',
   'records.empty': 'Henüz kaydedilmiş çalışma yok',
   'records.start_study': 'Çalışmaya Başla',
+  'records.select_date': 'Tarih Seç',
+  'records.no_records_date': '{date} tarihinde kayıt bulunamadı.',
   'common.error': 'Hata',
+  'common.show_all': 'Tümünü Göster',
+  'common.clear_filter': 'Filtreyi Temizle',
   'records.delete_title': 'Kaydı Sil',
   'records.delete_body': '{date} tarihli kaydı silmek istediğinize emin misiniz?',
 
@@ -206,6 +214,14 @@ const tr = {
   'iap.premium_yearly_title': 'Yıllık Premium',
   'iap.one_time_purchase': 'Tek seferlik ödeme',
   'iap.ad_free_forever': 'Sonsuza dek reklamsız',
+  'iap.subscription_info': 'Abonelik Bilgileri',
+  'iap.length_month': 'Abonelik süresi: 1 ay (otomatik yenilenir)',
+  'iap.length_year': 'Abonelik süresi: 1 yıl (otomatik yenilenir)',
+  'iap.price_per_unit_month': 'Aylık fiyat: {price} / ay',
+  'iap.price_per_unit_year': 'Yıllık fiyat: {price} / yıl',
+  'iap.all_premium_features': 'Tüm premium özellikler dahildir',
+  'iap.length_lifetime': 'Süre: Ömür boyu (yenileme yok)',
+  'iap.price_one_time': 'Tek seferlik fiyat: {price}',
   'iap.ads_removed': 'Reklamlar kaldırıldı.',
   'iap.purchase_failed': 'Satın alma başarısız veya iptal edildi.',
   'iap.premium_enabled': 'Premium aktif edildi.',
@@ -224,8 +240,8 @@ const en = {
   'nav.record_detail': 'Record Detail',
 
   // App display names
-  'app.name': 'Study Journal Pro',
-  'app.name.en': 'Study Journal Pro',
+  'app.name': 'Study Tracker Plus',
+  'app.name.en': 'Study Tracker Plus',
 
   // Home
   'home.title': 'Study Journal',
@@ -248,17 +264,17 @@ const en = {
   'settings.data': 'Data Management',
   'settings.clear_all_notes': 'Clear All Notes',
   'settings.about': 'About',
-  'settings.app_name': 'Study Journal Pro',
+  'settings.app_name': 'Study Tracker Plus',
   'settings.version': 'Version 1.0.0',
-  'settings.description':'Study Journal Pro is a modern study journal app designed to'+ 
+  'settings.description':'Study Tracker Plus is a modern study journal app designed to'+ 
   'help you manage your time most efficiently. Simple and stylish add-ons allow you to '+
   'focus without distractions and easily record your lap times. You can assign different'+
   ' notes to each study lap, which you can then display or delete. You can seamlessly store'+
   ' your work locally and view your stored work diaries through our app. '+
-  'Combining simplicity, clarity, and a modern design, Study Journal Pro adds'+
+  'Combining simplicity, clarity, and a modern design, Study Tracker Plus adds'+
   ' value to your study and work life.',// 'A minimal, elegant app to track your study sessions, take notes, and view progress statistics.',
   
-  'settings.copyright': '© 2025 Study Journal Pro',
+  'settings.copyright': '© 2025 Study Tracker Plus',
   'settings.language': 'Language',
   'settings.select_language': 'Language selection',
   'settings.lang.tr': 'Türkçe',
@@ -272,7 +288,11 @@ const en = {
   'common.buy_me_a_coffee': 'Buy me a coffee',
   'settings.icons_refs_link': 'Icons and References Used in the Application',
   'settings.icons_refs_title': 'License Information and Icon Attributions',
+  'settings.legal': 'Legal',
+  'settings.privacy_policy': 'Privacy Policy',
+  'settings.terms_of_use': 'Terms of Use',
   'common.close': 'Close',
+  'iap.calendar_premium_message': 'Calendar date selection and record filtering is a premium feature. Would you like to go Premium to access it?',
   // Onboarding
   'onboarding.title1': 'Start your study with the stopwatch',
   'onboarding.body1': 'Start/stop the timer and record sessions with laps.',
@@ -349,7 +369,11 @@ const en = {
   'records.subtitle': 'Manage your study progress',
   'records.empty': 'No recorded study yet',
   'records.start_study': 'Start Studying',
+  'records.select_date': 'Select Date',
+  'records.no_records_date': 'No records for {date}.',
   'common.error': 'Error',
+  'common.show_all': 'Show All',
+  'common.clear_filter': 'Clear Filter',
   'records.delete_title': 'Delete Record',
   'records.delete_body': 'Are you sure you want to delete the record for {date}?',
 
@@ -423,14 +447,22 @@ const en = {
   'common.today': 'Today',
   'common.na': 'N/A',
   'iap.remove_ads_lifetime_title': 'Remove Ads (Lifetime)',
-  'iap.premium_monthly_title': 'Premium Monthly',
-  'iap.premium_yearly_title': 'Premium Yearly',
-  'iap.one_time_purchase': 'One‑time purchase',
-  'iap.ad_free_forever': 'Ad‑free forever',
+  'iap.premium_monthly_title': 'Monthly Premium',
+  'iap.premium_yearly_title': 'Yearly Premium',
+  'iap.one_time_purchase': 'One-time purchase',
+  'iap.ad_free_forever': 'Ad-free forever',
+  'iap.subscription_info': 'Subscription Information',
+  'iap.length_month': 'Subscription length: 1 month (auto‑renewing)',
+  'iap.length_year': 'Subscription length: 1 year (auto‑renewing)',
+  'iap.price_per_unit_month': 'Monthly price: {price} / month',
+  'iap.price_per_unit_year': 'Yearly price: {price} / year',
+  'iap.all_premium_features': 'Includes all premium features',
+  'iap.length_lifetime': 'Length: Lifetime (no renewal)',
+  'iap.price_one_time': 'One‑time price: {price}',
   'iap.ads_removed': 'Ads removed.',
-  'iap.purchase_failed': 'Purchase failed or unavailable.',
+  'iap.purchase_failed': 'Purchase failed or cancelled.',
   'iap.premium_enabled': 'Premium enabled.',
-  'iap.subscription_failed': 'Subscription failed or unavailable.',
+  'iap.subscription_failed': 'Subscription failed or not available.',
   'iap.restore_ok': 'Purchases restored.',
   'iap.restore_none': 'No purchases found.',
 };
@@ -444,7 +476,7 @@ const es = {
   'nav.record_detail': 'Detalle del registro',
 
   'app.name': 'Diario de Estudio Pro',
-  'app.name.en': 'Study Journal Pro',
+  'app.name.en': 'Study Tracker Plus',
 
   'home.title': 'Diario de estudio',
   'home.empty_title': 'Aún no hay notas de estudio',
@@ -465,16 +497,16 @@ const es = {
   'settings.data': 'Gestión de datos',
   'settings.clear_all_notes': 'Borrar todas las notas',
   'settings.about': 'Acerca de',
-  'settings.app_name': 'Study Journal Pro',
+  'settings.app_name': 'Study Tracker Plus',
   'settings.version': 'Versión 1.0.0',
-  'settings.description':'Study Journal Pro es una aplicación moderna diseñada para'+
+  'settings.description':'Study Tracker Plus es una aplicación moderna diseñada para'+
   ' ayudarte a gestionar tu tiempo de la forma más eficiente. Su interfaz simple y elegante '+
   'permite concentrarte sin distracciones y registrar fácilmente tus tiempos por vuelta. '+
   'Puedes asignar diferentes notas a cada vuelta de estudio, que después podrás editar o eliminar. '+
   'Puedes almacenar tus trabajos de forma local y ver tus diarios guardados desde la app. '+
-  'Combinando simplicidad, funcionalidad y un diseño moderno, Study Journal Pro aporta valor '+
+  'Combinando simplicidad, funcionalidad y un diseño moderno, Study Tracker Plus aporta valor '+
   'a tu vida de estudio y trabajo.',
-  'settings.copyright': '© 2025 Study Journal Pro',
+  'settings.copyright': '© 2025 Study Tracker Plus',
   'settings.language': 'Idioma',
   'settings.select_language': 'Selección de idioma',
   'settings.lang.tr': 'Türkçe',
@@ -488,7 +520,11 @@ const es = {
   'common.buy_me_a_coffee': 'Invítame un café',
   'settings.icons_refs_link': 'Iconos y referencias usados en la aplicación',
   'settings.icons_refs_title': 'Información de licencias y atribuciones de iconos',
+  'settings.legal': 'Legal',
+  'settings.privacy_policy': 'Política de privacidad',
+  'settings.terms_of_use': 'Términos de uso',
   'common.close': 'Cerrar',
+  'iap.calendar_premium_message': 'La selección de fechas y filtrado de registros en el calendario es una función premium. ¿Quieres pasar a Premium para acceder?',
 
   'onboarding.title1': 'Empieza tus estudios con el cronómetro',
   'onboarding.body1': 'Inicia/detén el temporizador y registra sesiones con vueltas.',
@@ -560,8 +596,12 @@ const es = {
   'records.subtitle': 'Gestiona tu progreso',
   'records.empty': 'Aún no hay estudios registrados',
   'records.start_study': 'Comenzar a estudiar',
+  'records.select_date': 'Seleccionar fecha',
+  'records.no_records_date': 'No hay registros para {date}.',
   'records.delete_title': 'Eliminar registro',
   'records.delete_body': '¿Seguro que deseas eliminar el registro de {date}?',
+  'common.show_all': 'Mostrar todo',
+  'common.clear_filter': 'Limpiar filtro',
 
   'record.not_found': 'Registro no encontrado',
   'record.go_back': 'Volver',
@@ -632,6 +672,14 @@ const es = {
   'iap.premium_yearly_title': 'Premium anual',
   'iap.one_time_purchase': 'Compra única',
   'iap.ad_free_forever': 'Sin anuncios para siempre',
+  'iap.all_premium_features': 'Incluye todas las funciones premium',
+  'iap.length_lifetime': 'Duración: De por vida (sin renovación)',
+  'iap.price_one_time': 'Precio único: {price}',
+  'iap.subscription_info': 'Información de la suscripción',
+  'iap.length_month': 'Duración de la suscripción: 1 mes (renovación automática)',
+  'iap.length_year': 'Duración de la suscripción: 1 año (renovación automática)',
+  'iap.price_per_unit_month': 'Precio mensual: {price} / mes',
+  'iap.price_per_unit_year': 'Precio anual: {price} / año',
   'iap.ads_removed': 'Anuncios eliminados.',
   'iap.purchase_failed': 'La compra falló o no está disponible.',
   'iap.premium_enabled': 'Premium activado.',
@@ -648,8 +696,8 @@ const ar = {
   'nav.add_note': 'إضافة ملاحظة',
   'nav.record_detail': 'تفاصيل السجل',
 
-  'app.name': 'Study Journal Pro',
-  'app.name.en': 'Study Journal Pro',
+  'app.name': 'Study Tracker Plus',
+  'app.name.en': 'Study Tracker Plus',
 
   'home.title': 'سجل الدراسة',
   'home.empty_title': 'لا توجد ملاحظات دراسة بعد',
@@ -670,13 +718,13 @@ const ar = {
   'settings.data': 'إدارة البيانات',
   'settings.clear_all_notes': 'حذف جميع الملاحظات',
   'settings.about': 'حول',
-  'settings.app_name': 'Study Journal Pro',
+  'settings.app_name': 'Study Tracker Plus',
   'settings.version': 'الإصدار 1.0.0',
-  'settings.description':'Study Journal Pro تطبيق حديث يساعدك على إدارة وقتك بكفاءة عالية. '+
+  'settings.description':'Study Tracker Plus تطبيق حديث يساعدك على إدارة وقتك بكفاءة عالية. '+
   'واجهة بسيطة وأنيقة لتقليل التشتيت وتسجيل أوقات الجولات بسهولة. يمكنك إرفاق ملاحظات مختلفة بكل جولة دراسة '+
   'ثم تعديلها أو حذفها لاحقًا. يمكنك تخزين أعمالك محليًا وعرض اليوميات المخزنة عبر التطبيق. '+
   'يمزج التطبيق بين البساطة والوظائف والتصميم العصري ليضيف قيمة إلى حياتك الدراسية والعملية.',
-  'settings.copyright': '© 2025 Study Journal Pro',
+  'settings.copyright': '© 2025 Study Tracker Plus',
   'settings.language': 'اللغة',
   'settings.select_language': 'اختيار اللغة',
   'settings.lang.tr': 'Türkçe',
@@ -690,7 +738,11 @@ const ar = {
   'common.buy_me_a_coffee': 'ادعمني بقهوة',
   'settings.icons_refs_link': 'الأيقونات والمراجع المستخدمة في التطبيق',
   'settings.icons_refs_title': 'معلومات التراخيص ونسب الأيقونات',
+  'settings.legal': 'قانوني',
+  'settings.privacy_policy': 'سياسة الخصوصية',
+  'settings.terms_of_use': 'شروط الاستخدام',
   'common.close': 'إغلاق',
+  'iap.calendar_premium_message': 'ميزة اختيار التاريخ وتصفية السجلات في التقويم هي ميزة بريميوم. هل تريد الترقية إلى بريميوم للوصول إليها؟',
 
   'onboarding.title1': 'ابدأ دراستك بالمؤقت',
   'onboarding.body1': 'ابدأ/أوقف المؤقت وسجل الجلسات بالجولات.',
@@ -762,8 +814,12 @@ const ar = {
   'records.subtitle': 'إدارة تقدمك الدراسي',
   'records.empty': 'لا توجد دراسات مسجلة بعد',
   'records.start_study': 'ابدأ الدراسة',
+  'records.select_date': 'اختر التاريخ',
+  'records.no_records_date': 'لا سجلات لتاريخ {date}.',
   'records.delete_title': 'حذف السجل',
   'records.delete_body': 'هل تريد حذف سجل {date}؟',
+  'common.show_all': 'عرض الكل',
+  'common.clear_filter': 'مسح الفلتر',
 
   'record.not_found': 'السجل غير موجود',
   'record.go_back': 'رجوع',
@@ -834,6 +890,14 @@ const ar = {
   'iap.premium_yearly_title': 'بريميوم سنوي',
   'iap.one_time_purchase': 'عملية شراء لمرة واحدة',
   'iap.ad_free_forever': 'بلا إعلانات إلى الأبد',
+  'iap.all_premium_features': 'يشمل جميع ميزات البريميوم',
+  'iap.length_lifetime': 'المدة: مدى الحياة (بدون تجديد)',
+  'iap.price_one_time': 'السعر لمرة واحدة: {price}',
+  'iap.subscription_info': 'معلومات الاشتراك',
+  'iap.length_month': 'مدة الاشتراك: شهر واحد (تجديد تلقائي)',
+  'iap.length_year': 'مدة الاشتراك: سنة واحدة (تجديد تلقائي)',
+  'iap.price_per_unit_month': 'السعر الشهري: {price} / شهر',
+  'iap.price_per_unit_year': 'السعر السنوي: {price} / سنة',
   'iap.ads_removed': 'تمت إزالة الإعلانات.',
   'iap.purchase_failed': 'فشلت عملية الشراء أو غير متاحة.',
   'iap.premium_enabled': 'تم تفعيل البريميوم.',

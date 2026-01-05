@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Dimensions, ScrollView } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { Ionicons } from '@expo/vector-icons';
@@ -14,6 +15,7 @@ const OnboardingScreen = ({ onDone }) => {
   const scrollRef = useRef(null);
   const [index, setIndex] = useState(0);
   const navigation = useNavigation();
+  const insets = useSafeAreaInsets();
   const SKIP_COLOR = '#FF9800';
   const isNarrow = width <= 360;
   const CONTENT_MAX_WIDTH = Math.min(width - 40, 520);
@@ -69,7 +71,7 @@ const OnboardingScreen = ({ onDone }) => {
  
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.background }]}>
+    <View style={[styles.container, { backgroundColor: theme.background, paddingBottom: 24 + insets.bottom }]}>
       
       <ScrollView
         horizontal
@@ -120,7 +122,7 @@ const OnboardingScreen = ({ onDone }) => {
 
       {/* Actions */}
       {index < slides.length - 1 ? (
-        <View style={styles.actions}>
+        <View style={[styles.actions, { paddingBottom: Math.max(insets.bottom, 0) }]}>
           <TouchableOpacity onPress={handleSkipOrDone} style={[styles.button, styles.shadow, { backgroundColor: SKIP_COLOR }]}> 
             <Text style={[styles.buttonText, { color: '#fff' }]}>
               {t('onboarding.skip')}
@@ -131,7 +133,7 @@ const OnboardingScreen = ({ onDone }) => {
           </TouchableOpacity>
         </View>
       ) : (
-        <View style={[styles.actions, styles.actionsCenter]}>
+        <View style={[styles.actions, styles.actionsCenter, { paddingBottom: Math.max(insets.bottom, 0) }]}>
           <TouchableOpacity onPress={handleSkipOrDone} style={[styles.buttonLarge, styles.shadow, { backgroundColor: SKIP_COLOR }]}> 
             <Text style={styles.buttonLargeText}>{t('onboarding.done')}</Text>
           </TouchableOpacity>
@@ -145,7 +147,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     paddingTop: 32,
-    paddingBottom: 24,
   },
   header: {
     paddingHorizontal: 20,

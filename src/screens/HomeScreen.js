@@ -107,7 +107,7 @@ const HomeScreen = ({ navigation }) => {
           styles.listContent,
           { 
             paddingHorizontal: spacing.md,
-            paddingBottom: Math.max(80, insets.bottom + tabBarHeight + 24),
+            paddingBottom: Math.max(80, tabBarHeight + 24),
           },
           notes.length === 0 && styles.emptyList,
         ]}
@@ -140,7 +140,7 @@ const HomeScreen = ({ navigation }) => {
       />
 
       {/* Add Button */}
-      <AddButton onPress={handleAddNote} style={{ bottom: insets.bottom + tabBarHeight + 16 }} />
+      <AddButton onPress={handleAddNote} style={{ bottom: tabBarHeight + 16 }} />
     </View>
   );
 };

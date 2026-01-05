@@ -23,20 +23,13 @@ const CustomTabBar = (props) => {
   return (
     <View style={[styles.wrapper, { backgroundColor: theme.background }]}> 
       {bannerEnabled && (
-        <View style={[styles.bannerContainer, { borderTopColor: theme.border }]}> 
-          <AdsBanner
-            unitId={bannerUnitId}
-            containerStyle={{ paddingVertical: 4, width: '100%' }}
-          />
-        </View>
+        <AdsBanner
+          unitId={bannerUnitId}
+          containerStyle={{ paddingHorizontal: 8, paddingTop: 8, paddingBottom: 8, borderTopWidth: 1, borderTopColor: theme.border, backgroundColor: theme.background }}
+        />
       )}
 
       <BottomTabBar {...props} />
-
-      {/* Reserve safe area at very bottom so ad and tabs never collide with system gesture area */}
-      {insets.bottom > 0 && (
-        <View style={{ height: Math.max(insets.bottom, 8) }} />
-      )}
     </View>
   );
 };

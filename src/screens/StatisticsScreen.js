@@ -5,13 +5,13 @@ import { useTheme } from '../context/ThemeContext';
 import ChartCard from '../components/ChartCard';
 import { Ionicons } from '@expo/vector-icons';
 import DatabaseService from '../services/DatabaseService';
-import { useIsFocused } from '@react-navigation/native';
+import { useIsFocused, useNavigation } from '@react-navigation/native';
+import { isTurkeyRegion } from '../services/RegionService';
 import { useLanguage } from '../context/LanguageContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import AdsBanner from '../components/AdsBanner';
-import { InterstitialAd, AdEventType } from 'react-native-google-mobile-ads';
-import { getBannerUnitId, getInterstitialUnitId } from '../config/adMobIds';
+import { getBannerUnitId } from '../config/adMobIds';
 import { isAdsDisabled, onPremiumStatusChange, getPremiumStatus } from '../services/InAppPurchaseService';
 
 /**
@@ -24,31 +24,10 @@ const StatisticsScreen = () => {
   const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
   const bannerUnitId = getBannerUnitId();
-  const interstitialUnitId = getInterstitialUnitId();
-  const lastInterstitialTsRef = useRef(0);
+  const navigation = useNavigation();
   const [adsDisabled, setAdsDisabled] = useState(false);
 
-  const showInterstitialIfEligible = (periodKey) => {
-    if (adsDisabled) return;
-    if (periodKey === 'week') return;
-    const now = Date.now();
-    // Basit frekans kısıtlaması (>=90sn aralık)
-    if (now - lastInterstitialTsRef.current < 90000) return;
-    try {
-      const ad = InterstitialAd.createForAdRequest(interstitialUnitId, {
-        requestNonPersonalizedAdsOnly: true,
-      });
-      const unsubLoaded = ad.addAdEventListener(AdEventType.LOADED, () => ad.show());
-      const unsubClosed = ad.addAdEventListener(AdEventType.CLOSED, () => {
-        unsubLoaded();
-        unsubClosed();
-      });
-      ad.load();
-      lastInterstitialTsRef.current = now;
-    } catch (e) {
-      // sessizce geç
-    }
-  };
+  const showInterstitialIfEligible = () => {};
   const [activePeriod, setActivePeriod] = useState('week');
   const [stats, setStats] = useState([]);
   const isFocused = useIsFocused();
@@ -226,7 +205,7 @@ const StatisticsScreen = () => {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
-      <View style={[styles.header, { borderBottomColor: theme.border }]}>
+      <View style={[styles.header, { borderBottomColor: theme.border, paddingTop: insets.top + 16 }]}>
         <Text style={[styles.title, { color: theme.text }]}>{t('statistics.title')}</Text>
         <Text style={[styles.subtitle, { color: theme.textSecondary }]}>{t('statistics.subtitle')}</Text>
       </View>
@@ -251,23 +230,38 @@ const StatisticsScreen = () => {
             <>
               <TouchableOpacity style={[styles.overlay]} onPress={() => setShowPeriodMenu(false)} />
               <View style={[styles.dropdown, { backgroundColor: theme.card, borderColor: theme.border }]}> 
-                {periodOptions.map((opt) => (
-                  <Pressable
-                    key={opt.key}
-                    style={[
-                      styles.dropdownItem,
-                      activePeriod === opt.key && styles.dropdownItemActive,
-                      activePeriod === opt.key && { backgroundColor: theme.primary },
-                    ]}
-                    onPress={() => {
-                      showInterstitialIfEligible(opt.key);
-                      setActivePeriod(opt.key);
-                      setShowPeriodMenu(false);
-                    }}
-                  >
-                    <Text style={{ color: activePeriod === opt.key ? '#fff' : theme.text }}>{opt.label}</Text>
-                  </Pressable>
-                ))}
+                {periodOptions.map((opt) => {
+                  const premiumKeys = ['last_3m', 'last_6m', 'year', 'last_1y'];
+                  const isPremiumOption = premiumKeys.includes(opt.key);
+                  const isActive = activePeriod === opt.key;
+                  const isPremiumAllowed = adsDisabled || isTurkeyRegion();
+                  return (
+                    <Pressable
+                      key={opt.key}
+                      style={[
+                        styles.dropdownItem,
+                        isActive && styles.dropdownItemActive,
+                        isActive && { backgroundColor: theme.primary },
+                      ]}
+                      onPress={() => {
+                        if (isPremiumOption && !isPremiumAllowed) {
+                          setShowPeriodMenu(false);
+                          navigation.navigate('Settings', { openPlans: true });
+                          return;
+                        }
+                        setActivePeriod(opt.key);
+                        setShowPeriodMenu(false);
+                      }}
+                    >
+                      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+                        <Text style={{ color: isActive ? '#fff' : theme.text }}>{opt.label}</Text>
+                        {isPremiumOption && (
+                          <Ionicons name="star" size={16} color={isActive ? '#fff' : theme.primary} />
+                        )}
+                      </View>
+                    </Pressable>
+                  );
+                })}
               </View>
             </>
           )}
@@ -349,7 +343,7 @@ const styles = StyleSheet.create({
   },
   header: {
     padding: 16,
-    paddingTop: 60,
+    paddingTop: 16,
     borderBottomWidth: 1,
   },
   title: {

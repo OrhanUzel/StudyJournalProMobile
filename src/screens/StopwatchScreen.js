@@ -645,6 +645,7 @@ const styles = StyleSheet.create({
     fontSize: 65,//diğer segmentlerle aynı boyut
     fontWeight: 'bold',//bold
     includeFontPadding: false,
+    fontVariant: ['tabular-nums'],
   },
   separator: {
     alignItems: 'center',

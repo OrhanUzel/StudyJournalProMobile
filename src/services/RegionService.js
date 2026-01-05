@@ -1,19 +1,7 @@
+import * as Localization from 'expo-localization';
+
 export function isTurkeyRegion() {
   try {
-    let Localization = null;
-    try {
-      // Use dynamic require to avoid hard failure if the package isn't installed yet
-      // eslint-disable-next-line global-require
-      Localization = require('expo-localization');
-    } catch (e) {
-      Localization = null;
-    }
-
-    if (!Localization) {
-      // Best-effort fallback: not enough info, default to false
-      return false;
-    }
-
     const getLocales = Localization.getLocales?.bind(Localization);
     const locales = typeof getLocales === 'function' ? getLocales() : [];
     const regionCodes = Array.isArray(locales)
@@ -30,21 +18,26 @@ export function isTurkeyRegion() {
 
     return false;
   } catch (e) {
+    console.warn('isTurkeyRegion check failed:', e);
     return false;
   }
 }
 
 export function getDefaultLanguage() {
   try {
-    let Localization = null;
-    try {
-      Localization = require('expo-localization');
-    } catch (e) {
-      Localization = null;
-    }
-    if (!Localization) return 'en';
     const getLocales = Localization.getLocales?.bind(Localization);
     const locales = typeof getLocales === 'function' ? getLocales() : [];
+    
+    // iOS için önce languageCode'a bak (daha güvenilir)
+    if (Array.isArray(locales) && locales.length > 0) {
+      const langCode = (locales[0]?.languageCode || '').toLowerCase();
+      if (langCode === 'tr') return 'tr';
+      if (langCode === 'ar') return 'ar';
+      if (langCode === 'es') return 'es';
+      if (langCode === 'en') return 'en';
+    }
+    
+    // Sonra regionCode'a bak
     const regionCodes = Array.isArray(locales)
       ? locales.map((l) => (l?.regionCode || '').toUpperCase()).filter(Boolean)
       : [];
@@ -55,10 +48,12 @@ export function getDefaultLanguage() {
     if (code === 'TR') return 'tr';
     if (arabicRegions.has(code)) return 'ar';
     if (spanishRegions.has(code)) return 'es';
+    
+    // Son fallback: locale string
     const locale = (Localization.locale || '').toLowerCase();
-    if (locale.includes('tr') || locale.endsWith('-tr')) return 'tr';
-    if (locale.includes('ar') || locale.endsWith('-ar')) return 'ar';
-    if (locale.includes('es') || locale.endsWith('-es')) return 'es';
+    if (locale.includes('tr') || locale.startsWith('tr')) return 'tr';
+    if (locale.includes('ar') || locale.startsWith('ar')) return 'ar';
+    if (locale.includes('es') || locale.startsWith('es')) return 'es';
     return 'en';
   } catch (e) {
     return 'en';

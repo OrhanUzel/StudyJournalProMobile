@@ -157,9 +157,6 @@ const AppNavigator = () => {
         tabBarStyle: {
           backgroundColor: theme.background,
           borderTopColor: theme.borderColor,
-          paddingBottom: Math.max(insets.bottom, 8),
-          paddingTop: 8,
-          height: 56 + Math.max(insets.bottom, 8),
         },
         headerShown: false,
         tabBarLabelStyle: {
@@ -171,7 +168,7 @@ const AppNavigator = () => {
         <CustomTabBar
           {...props}
           bannerUnitId={getBannerUnitId()}
-          bannerEnabled={true}
+          bannerEnabled={false}
         />
       )}
     >

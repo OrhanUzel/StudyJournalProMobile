@@ -5,9 +5,12 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { isTurkeyRegion } from '../services/RegionService';
 import NetInfo from '@react-native-community/netinfo';
 import { onPremiumStatusChange, isAdsDisabled } from '../services/InAppPurchaseService';
+import { ensureTrackingPermission } from '../services/TrackingService';
 
 export default function AdsBanner({ unitId, size, containerStyle }) {
   const isExpoGo = Constants?.appOwnership === 'expo';
+  
+  // Türkiye bölgesinde veya Web/Expo Go ortamında reklam gösterme
   if (Platform.OS === 'web' || isExpoGo || isTurkeyRegion()) {
     return null;
   }
@@ -33,11 +36,15 @@ export default function AdsBanner({ unitId, size, containerStyle }) {
   const [adLoaded, setAdLoaded] = useState(false);
 
   useEffect(() => {
+    if (Platform.OS === 'ios') {
+      ensureTrackingPermission();
+    }
     let mounted = true;
     (async () => {
       try {
         const disabled = await isAdsDisabled();
-        if (mounted) setAdsDisabled(!!disabled);
+        // iOS'ta reklamlar her zaman gösterilir
+        if (mounted) setAdsDisabled(Platform.OS === 'ios' ? false : !!disabled);
       } catch {}
     })();
     NetInfo.fetch().then(state => {
@@ -48,7 +55,12 @@ export default function AdsBanner({ unitId, size, containerStyle }) {
     });
     const off = onPremiumStatusChange((status) => {
       if (!mounted) return;
-      setAdsDisabled(!!status?.active);
+      // iOS'ta reklamlar her zaman gösterilir, premium durumu reklamları etkilemez
+      if (Platform.OS === 'ios') {
+        setAdsDisabled(false);
+      } else {
+        setAdsDisabled(!!status?.active);
+      }
     });
     return () => { mounted = false; };
   }, []);
@@ -101,7 +113,10 @@ export default function AdsBanner({ unitId, size, containerStyle }) {
           size={finalSize}
           requestOptions={{ requestNonPersonalizedAdsOnly: true }}
           onAdLoaded={() => setAdLoaded(true)}
-          onAdFailedToLoad={() => setAdLoaded(false)}
+          onAdFailedToLoad={(error) => {
+            console.warn('Ad failed to load', error);
+            setAdLoaded(false);
+          }}
         />
       </View>
     </View>

@@ -40,5 +40,9 @@ yarn-error.*
 /ios
 /android
 
-#Config .js
-src/config/*.js
+# Config files should be included in EAS build
+# (were previously ignored and caused module resolution errors)
+
+.env
+.env.local
+.env.production
