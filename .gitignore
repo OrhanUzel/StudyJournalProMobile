@@ -39,9 +39,12 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+android/app/build/
+android/app/release/
+*.apk
+*.aab
 
-# Config files should be included in EAS build
-# (were previously ignored and caused module resolution errors)
+release/
 
 .env
 .env.local
