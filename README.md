@@ -144,3 +144,43 @@ StudyJournalProMobile/
 ## License
 
 MIT
+
+## Publish to Google Play (Android Studio)
+
+Follow these steps to generate a signed Android App Bundle (.aab) and upload to Google Play using Android Studio:
+
+1) Prepare configuration
+- Ensure `app.json` has `android.package` and `android.versionCode` set. Currently: `package = com.studyjournalpromobile`, `versionCode = 1`, `version = 1.0.1`.
+- Icons and splash are configured: `assets/app-icon.png` and `assets/adaptive-icon.png`.
+
+2) Prebuild native Android project
+- Run: `npx expo prebuild --platform android`
+- This creates the `android/` folder with Gradle project.
+
+3) Open in Android Studio
+- Open the `android/` folder in Android Studio.
+- Wait for Gradle sync to finish.
+
+4) Configure signing (release)
+- Generate a keystore (Android Studio: Build > Generate Signed Bundle/APK > Create new). Save the keystore safely.
+- When prompted, choose `Android App Bundle` and add keystore credentials.
+- Ensure the module is `app`.
+
+5) Build release bundle
+- In the wizard, select `Android App Bundle` and `release`.
+- Android Studio will output `.aab` under `android/app/build/outputs/bundle/release/`.
+
+6) Play Console upload
+- In Google Play Console, create the app with package name `com.studyjournalpromobile`.
+- Upload the `.aab` in Production (or Internal testing first).
+- Fill metadata: app name, short/long description, screenshots, content rating, target audience.
+- Provide a public Privacy Policy URL (assets/privacy.html can be hosted on GitHub Pages or your site).
+- Complete Data Safety form.
+
+7) Versioning rules
+- Increment `android.versionCode` for every store upload (e.g., 2, 3, 4...).
+- Update `expo.version` for user-facing version (e.g., 1.0.2).
+
+Notes
+- If you prefer cloud builds, use EAS: `eas build -p android --profile production` to generate `.aab` with managed signing.
+- Keep your keystore backed up; losing it prevents updating your app.

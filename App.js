@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { NavigationContainer } from '@react-navigation/native';
+import { createStackNavigator } from '@react-navigation/stack';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ThemeProvider } from './src/context/ThemeContext';
 import { NotesProvider } from './src/context/NotesContext';
@@ -14,18 +15,20 @@ import NotificationService from './src/services/NotificationService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import OnboardingScreen from './src/screens/OnboardingScreen';
 
+const RootStack = createStackNavigator();
+
 export default function App() {
-  const [onboardingChecked, setOnboardingChecked] = useState(false);
-  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [initialRoute, setInitialRoute] = useState(null);
 
   // İlk açılışta onboarding kontrolü
   useEffect(() => {
     (async () => {
       try {
-        const flag = await AsyncStorage.getItem('hasSeenOnboarding');
-        setShowOnboarding(flag !== 'true');
-      } catch {}
-      setOnboardingChecked(true);
+        const seen = await AsyncStorage.getItem('hasSeenOnboarding');
+        setInitialRoute(seen === 'true' ? 'Main' : 'Onboarding');
+      } catch {
+        setInitialRoute('Onboarding');
+      }
     })();
   }, []);
 
@@ -107,10 +110,18 @@ export default function App() {
           <NotesProvider>
             <NavigationContainer>
               <StatusBar style="auto" />
-              {onboardingChecked && showOnboarding ? (
-                <OnboardingScreen onDone={() => setShowOnboarding(false)} />
-              ) : (
-                <AppNavigator />
+              {initialRoute && (
+                <RootStack.Navigator initialRouteName={initialRoute} screenOptions={{ headerShown: false }}>
+                  <RootStack.Screen name="Main" component={AppNavigator} />
+                  <RootStack.Screen name="Onboarding" options={{ presentation: 'fullScreenModal' }}>
+                    {(props) => (
+                      <OnboardingScreen
+                        {...props}
+                        onDone={() => props.navigation.reset({ index: 0, routes: [{ name: 'Main' }] })}
+                      />
+                    )}
+                  </RootStack.Screen>
+                </RootStack.Navigator>
               )}
             </NavigationContainer>
           </NotesProvider>
